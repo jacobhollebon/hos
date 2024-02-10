@@ -18,14 +18,15 @@ We kindly ask to acknowledge the use of this software in publications or softwar
 Jacob Hollebon and Filippo Maria Fazi, “Higher-order stereophony,” IEEE/ACM Transactions on Audio, Speech, and Language Processing, vol. 31, pp. 2872–2885, 2023
 
 
-Toolboxes
------
+
+## Folder Structure
+
+### Toolboxes
 
 Core python functions required for HOS
 
 
-VISR
------
+### VISR
 
 Code to perform realtime processing using the python implementation of the Versatile Interactive Realtime Renderer (VISR) framework.
 
