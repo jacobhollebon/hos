@@ -42,19 +42,6 @@ from hos_loudspeaker_decoder_controller import HOSLoudspeakerDecoderController
 
 class HOSLoudspeakerDecoder( visr.CompositeComponent ):
     """
-    Decode a HOS signal to loudspeaker signals.
-    
-    Takes a given loudspeaker array, creates then inverts the corresponding plant matrix (with Tikhonov regularisation, if requested).
-    
-    Next, the loudspeaker signals dependent on the input HOS signals are calculated and outputted.
-    
-    Compensation for listener yaw head rotations are included 
-    
-    This decoder depends on a controller to compute the loudspeaker gains
-    
-    
-    
-    
     HOS format to loudspeaker signals decoder. 
     
     Takes a given loudspeaker array, creates then inverts the corresponding plant matrix (with Tikhonov regularisation, if requested).
