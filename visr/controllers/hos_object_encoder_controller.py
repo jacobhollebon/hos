@@ -160,7 +160,7 @@ class HOSObjectEncoderController( visr.AtomicComponent ):
         self.hhat = applyRotation( [1,0,0], initialOrientation ) # listener orientation axis
         
         # Calculate Plant Matrix (encoding coefficents for each source from each given direction)
-        self.HOSAngles = hos.calculateHOSAngle(objectPos_xyz, hhat) # Source angles w.r.t interaural axis
+        self.HOSAngles = hos.calculateHOSAngle(self.objectPos_xyz, self.hhat) # Source angles w.r.t interaural axis
         srcEncoder = hos.calculateHOSPlant(self.HOSAngles, self.HOSOrder, HOSType=self.HOSType) # encoder
         
         # Initiate unitary volume at start up
@@ -225,7 +225,7 @@ class HOSObjectEncoderController( visr.AtomicComponent ):
             
         if recalculateFlag:
             # Calculate Plant Matrix (encoding coefficents for each source from each given direction)
-            self.HOSAngles = hos.calculateHOSAngle(objectPos_xyz, hhat) # Source angles w.r.t interaural axis
+            self.HOSAngles = hos.calculateHOSAngle(self.objectPos_xyz, self.hhat) # Source angles w.r.t interaural axis
             srcEncoder = hos.calculateHOSPlant(self.HOSAngles, self.HOSOrder, HOSType=self.HOSType) # encoder
             self.srcEncoder = srcEncoder * self.levels[np.newaxis,:]
             
