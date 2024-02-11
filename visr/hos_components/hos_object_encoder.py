@@ -123,7 +123,7 @@ class HOSObjectEncoder( visr.CompositeComponent ):
                                                                numberOfObjects = numObjects,
                                                                objectPos = objectPos,
                                                                HOSOrder = HOSOrder,             
-                                                               HOSType = 'Sine' ,         
+                                                               HOSType = HOSType,    
                                                                useHeadTracking = headTracking,  
                                                                initialOrientation = headOrientation,
                                                                useYawOnly = useYawOnly)
