@@ -107,7 +107,7 @@ class HOSObjectEncoderController( visr.AtomicComponent ):
         self.useYawOnly      = useYawOnly
 
         # Encoding coefficient output ports
-        self.coeffOutput = visr.ParameterOutput( "name", self,
+        self.coeffOutput = visr.ParameterOutput( "coefficientOutput", self,
                                                 pml.MatrixParameterFloat.staticType,
                                                 pml.DoubleBufferingProtocol.staticType,
                                                 pml.MatrixParameterConfig(self.numberOfObjects, self.numHOSCoeffs))
