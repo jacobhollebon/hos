@@ -58,7 +58,7 @@ class HOSObjectEncoder( visr.CompositeComponent ):
                  HOSType = 'Sine',
                  interpolationSteps = None,
                  headOrientation = None,
-                 headTracking = False,
+                 useHeadTracking = False,
                  useYawOnly = False,
                  ):
         """ 
@@ -124,7 +124,7 @@ class HOSObjectEncoder( visr.CompositeComponent ):
                                                                objectPos = objectPos,
                                                                HOSOrder = HOSOrder,             
                                                                HOSType = HOSType,    
-                                                               useHeadTracking = headTracking,  
+                                                               useHeadTracking = useHeadTracking,  
                                                                initialOrientation = headOrientation,
                                                                useYawOnly = useYawOnly)
         

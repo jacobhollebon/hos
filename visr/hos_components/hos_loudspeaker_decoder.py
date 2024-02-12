@@ -119,7 +119,6 @@ class HOSLoudspeakerDecoder( visr.CompositeComponent ):
             Note the gains are normalised such the furthest loudspeaker has a gain of 1
             and all other gains are attenuations (no amplification)
             Should be connected to a gain or delay vector component at a higher level
-            
         """
         
         super( HOSLoudspeakerDecoder, self ).__init__( context, name, parent )     
