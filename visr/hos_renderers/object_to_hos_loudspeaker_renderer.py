@@ -47,10 +47,11 @@ from hos_loudspeaker_decoder import HOSLoudspeakerDecoder
 
 class ObjectToHOSLoudspeakerRenderer(visr.CompositeComponent ):
     """
-    Renderer to transform a set of audio objects into HOS loudspeaker signals for output to a real loudspeaker array
-
-    This class extends visr_bst.VirtualLoudspeakerRenderer by a configurable head tracking receiver,
-    making it suitable for realtime use.
+    Renderer to encode a set of audio objects into HOS format then decodes to obtain HOS loudspeaker signals 
+    
+    Compensation for listener rotations (encoder and decoder) and/or translations (decoder only) is optionally included 
+    
+    Dynamic delay and/or gain calibration of the loudspeaker array is optionally included to ensure the array is acoustical equidistant
     """
     def __init__( self,
                  context, name, parent,
