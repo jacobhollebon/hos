@@ -102,11 +102,15 @@ def applyRotation( xyz, ypr, isInverseRotation=False, isDegrees=False):
     xyz = np.asarray(xyz)
     if xyz.shape[-1] != 3:
         raise ValueError('You must supply all three cartesian coordinates to variable xyz')
-    
+    if xyz.ndim == 1:
+        xyz = xyz[np.newaxis,:]
+        
     ypr = np.asarray(ypr)
     if ypr.shape[-1] != 3:
         raise ValueError('You must supply all three euler angles to variable ypr')
-    
+    if ypr.ndim == 1:
+        ypr = ypr[np.newaxis,:]
+        
     r = rot.from_euler('zxy', ypr, degrees=isDegrees)
     xyz_rot = r.apply(xyz, inverse=isInverseRotation)
     return xyz_rot
@@ -137,14 +141,16 @@ def estimateAndApplyRotation( xyz, hhat ):
     xyz = np.asarray(xyz)
     if xyz.shape[-1] != 3:
         raise ValueError('You must supply all three cartesian coordinates to variable xyz')
-    
+    if xyz.ndim == 1:
+        xyz = xyz[np.newaxis,:]
+        
     hhat = np.asarray(hhat)
     if hhat.shape[-1] != 3:
         raise ValueError('You must supply all three cartesian coordinates to variable hhat')
     if hhat.ndim != 1:
         raise ValueError(f'hhat must be single dimension length 3, you have supplied shape {hhat.shape}')
      
-    r, _= rot.align_vectors([1,0,0], hhat) # calculates rotation from global to listener frame
+    r, _= rot.align_vectors(np.array([[1,0,0]]), hhat[np.newaxis,:]) # calculates rotation from global to listener frame
     isDegrees = False
     ypr = r.as_euler('zxy', degrees=isDegrees)
     xyz_rot = applyRotation(xyz, ypr, isInverseRotation=False, isDegrees=isDegrees)

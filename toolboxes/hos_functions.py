@@ -54,27 +54,18 @@ def _quadrantMapping( vec, hhat ):
     hhat : Array-like, shape (3)
         Unit norm cartesian vector pointing in the look direction of
         the listeners head (listener orientation)
-
-    Raises
-    ------
-    ValueError
-        DESCRIPTION.
-
+        
     Returns
     -------
-    factor : TYPE
-        DESCRIPTION.
+    factor : int
+        1 or -1 depending on the quadrant.
 
     '''
-    vec_rot = geometry.estimateAndApplyRotation(vec, hhat)
+    vec_rot = np.squeeze(geometry.estimateAndApplyRotation(vec, hhat))
+
     sph = geometry.cart2sph(vec_rot[0], vec_rot[1], vec_rot[2])
     # Quadrant of each azimuthal position as int 0,1,2,3 going clockwise w.r.t azimuth
     aziQuad = int(np.floor((np.round(sph[0],10) % (2*np.pi))/(np.pi/2)))
-    
-    print(vec)
-    print(vec_rot)
-    print(sph)
-    print(aziQuad)
     
     if aziQuad in [0,1]:
         factor = 1
@@ -126,6 +117,8 @@ def calculateHOSAngle( xyz, hhat=np.array([1,0,0]) ):
     if hhat.shape[-1] != 3:
         raise ValueError('You must supply all three cartesian coordinates to variable hhat')
     if hhat.ndim != 1:
+        hhat = np.squeeze(hhat)
+    if hhat.shape[0] != 3:
         raise ValueError(f'hhat must be single dimension length 3, you have supplied shape {hhat.shape}')
         
     hhat = hhat / np.linalg.norm(hhat) # In case nhat wasnt normed already
@@ -259,7 +252,7 @@ def calculateHOSDecoder( plant, order, beta=None ):
 if __name__ == "__main__":
     
     import matplotlib.pyplot as plt
-    from geometry import sph2cart
+    from geometry import sph2cart, applyRotation
     
     # Create a set of source positions ranging from -90 to 90 azimuth
     res = 1 # angular res in deg
@@ -289,16 +282,16 @@ if __name__ == "__main__":
 
 
     # Source angles w.r.t interaural axis
-    HOSAngles_src = hos.calculateHOSAngle(srcPos_xyz, hhat)
+    HOSAngles_src = calculateHOSAngle(srcPos_xyz, hhat)
     # Plant Matrix (encoding coefficents for each source from each given direction)
-    srcEncoder = hos.calculateHOSPlant(HOSAngles_src, order, HOSType='sine')
+    srcEncoder = calculateHOSPlant(HOSAngles_src, order, HOSType='sine')
 
     # Spkr angles w.r.t interaural axis
-    HOSAngles_spkrs = hos.calculateHOSAngle(spkrPos_xyz, hhat)
+    HOSAngles_spkrs = calculateHOSAngle(spkrPos_xyz, hhat)
     # Plant Matrix (coeifficents for spkr position)
-    spkrPlant = hos.calculateHOSPlant(HOSAngles_spkrs, order, HOSType='sine')
+    spkrPlant = calculateHOSPlant(HOSAngles_spkrs, order, HOSType='sine')
     # Decoding matrix for spkr plant
-    spkrDecoder = hos.calculateHOSDecoder(spkrPlant, order, beta=0.00001)
+    spkrDecoder = calculateHOSDecoder(spkrPlant, order, beta=0.00001)
 
     # Calculate the actual loudspeaker gains for each source position
     gains = np.zeros((numSpkrs, numSrcs))
@@ -347,7 +340,7 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.show()
 
-)
+
         
     
     
