@@ -72,22 +72,29 @@ class HOSObjectEncoder( visr.CompositeComponent ):
             Name of the component, Standard visr.Component construction argument.
         parent : visr.CompositeComponent
             Containing component if there is one, None if this is a top-level component of the signal flow.
-        numObjects: int
-            Number of audio channels/mono objects in.
-        HOSOrder: float
-            Order of the HOS encoding.
+        numberOfObjects: int
+            The number of plane wave objects rendered.
+            This must be supplied to initialise signal flow sizes before runtime
+            If a larger number is supplied via a scene decoder an error will be raised
+        objectPos: array-like, size (numberOfObjects, 2)
+            Starting positions of the objects. 
+            Second dimension containing (azimuth, elevation) of the sources in rads
+        HOSOrder: int
+            Order of the HOS encoding
         HOSType: string
            Type of HOS Representation, either 'Sine' (y axis reconstruction) or 'Cosine' (x axis reconstruction). 
-           Ensure angles are correctly identified depending on which axis the reproduction is along.
+           Ensures angles are correctly identified depending on which axis the reproduction is along.
         interpolationSteps: int, optional
            Number of samples to transition to new object positions after an update.
         headOrientation : array-like
-            Head orientation in spherical coordinates (2- or 3-element vector or list). Either a static orientation (when no tracking is used),
-            or the initial view direction
-        headTracking: bool
-            Whether dynamic head tracking is active.
+            The initial head rotation or the static head orientation if dynamic updates are deactivated. 
+            Given as yaw, pitch, roll in radians
+        useHeadTracking: bool
+            Whether the orientation is updated at runtime. If True, a parmater input
+            "orientation" is instantiated that receivers pml.ListenerPositions
         useYawOnly: bool
-            Whether 3DOF (false) headtracking or 1DOF (yaw only) headtracking is implemented. 
+            If False listener head orientation is tracked w.r.t 3DOF
+            If True the pitch and roll of the listener orientation is ignored
         """
         
         super( HOSObjectEncoder, self ).__init__( context, name, parent )     

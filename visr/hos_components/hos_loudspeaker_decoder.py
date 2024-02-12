@@ -94,7 +94,7 @@ class HOSLoudspeakerDecoder( visr.CompositeComponent ):
         interpolationSteps: int, optional
            Number of samples to transition to new coefficients in processing blocks after an update.
         headOrientation : array-like
-            Head orientation in spherical coordinates (2- or 3-element vector or list). Either a static orientation (when no tracking is used),
+            Head orientation in spherical coordinates (3-element vector or list). Either a static orientation (when no tracking is used),
             or the initial view direction
         headPosition : array-like
             Head position in x y z cartesian coordinates (3-element vector or list). Either a static position (when no tracking is used),
@@ -105,6 +105,9 @@ class HOSLoudspeakerDecoder( visr.CompositeComponent ):
         usePositionTracking: bool
             Whether dynamic head tracking (position) is active.
             Opens up top level parameter port named "position" to recieve a pml.ListenerPosition object
+        useYawOnly: bool
+            If False listener head orientation is tracked w.r.t 3DOF
+            If True the pitch and roll of the listener orientation is ignored
         useDelayCompensation: bool
             If True an output port named "delayOutput" is inistitated that
             outputs a delay per loudspeaker to time align them w.r.t the current
