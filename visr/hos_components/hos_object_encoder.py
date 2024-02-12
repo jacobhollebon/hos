@@ -152,4 +152,30 @@ class HOSObjectEncoder( visr.CompositeComponent ):
         self.audioConnection( self.HOSObjectEncoder.audioPort("out"), self.audioOut ) # Output of the encoder to audio out - this is HOS format    
           
 
+if __name__ == "__main__":
+    import numpy as np
+    
+    fs = 48000
+    blockSize = 1024
+    context = visr.SignalFlowContext(blockSize, fs)
+        
+   
+    srcPos_sph = np.stack([[0, 0]], axis=-1).T
+    numSrcs = srcPos_sph.shape[0]
+    # HOS order
+    order = 4
+    
+    encoder = HOSObjectEncoder(context, "encoder", None,    
+                                numObjects = numSrcs,
+                                objectPos = srcPos_sph,
+                                HOSOrder = order,
+                                HOSType = 'Sine',
+                                interpolationSteps = None,
+                                headOrientation = None,
+                                headTracking = False,
+                                useYawOnly = False,
+                                )
+        
+        
+        
  

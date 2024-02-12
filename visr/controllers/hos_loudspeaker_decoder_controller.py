@@ -40,7 +40,7 @@ import numpy as np
 import visr
 import pml
 
-from geoemetry import sph2cart, cart2sph, applyRotation
+from geometry import sph2cart, cart2sph, applyRotation
 import hos_functions as hos
 
 class HOSLoudspeakerDecoderController( visr.AtomicComponent ):
@@ -150,7 +150,7 @@ class HOSLoudspeakerDecoderController( visr.AtomicComponent ):
         self.coeffOutput = visr.ParameterOutput( "coefficientOutput", self,
                                                 pml.MatrixParameterFloat.staticType,
                                                 pml.DoubleBufferingProtocol.staticType,
-                                                pml.MatrixParameterConfig(self.numberOfObjects, self.numHOSCoeffs))
+                                                pml.MatrixParameterConfig(self.numHOSCoeffs, self.numberOfLoudspeakers))
         self.coeffOutputProtocol = self.coeffOutput.protocolOutput()
         if self.useDelayCompensation:
             outConfigDelays = pml.VectorParameterConfig( self.numberOfLoudspeakers )
@@ -191,14 +191,14 @@ class HOSLoudspeakerDecoderController( visr.AtomicComponent ):
             initialOrientation = np.zeros( (3), np.float32 )
         else:
             initialOrientation = np.asarray( initialOrientation, dtype = np.float32 ) 
-        if initialOrientation.shape != 3:
+        if initialOrientation.shape[0] != 3:
             raise ValueError(f'Invalid initialOrientation, should be size 3 [y,p,r], supplied {initialOrientation}')
         
         if initialPosition is None:
             initialPosition = np.zeros( (3), np.float32 )
         else:
             initialPosition = np.asarray( initialPosition, dtype = np.float32 ) 
-        if initialPosition.shape != 3:
+        if initialPosition.shape[0] != 3:
             raise ValueError(f'Invalid initialPosition, should be size 3 [x,y,z], supplied {initialPosition}')
         
         # Calculate hhat, vector pointing in direction of listener look / x axis in listenter frame

@@ -42,7 +42,7 @@ import visr
 import pml
 import objectmodel as om
 
-from geoemetry import sph2cart, cart2sph, applyRotation
+from geometry import sph2cart, cart2sph, applyRotation
 import hos_functions as hos
 
 class HOSObjectEncoderController( visr.AtomicComponent ):
@@ -134,7 +134,7 @@ class HOSObjectEncoderController( visr.AtomicComponent ):
             initialOrientation = np.zeros( (3), np.float32 )
         else:
             initialOrientation = np.asarray( initialOrientation, dtype = np.float32 ) 
-        if initialOrientation.shape != 3:
+        if initialOrientation.shape[0] != 3:
             raise ValueError(f'Invalid initialOrientation, should be size 3 [y,p,r], supplied {initialOrientation}')
         
         
@@ -146,7 +146,7 @@ class HOSObjectEncoderController( visr.AtomicComponent ):
             raise ValueError(f'Specified starting object positions the wrong shape, should be numObjects x 2 (az, el), supplied {objectPos.shape}' )
         # Find the cartesian coordinates of all the source positions
         self.objectPos_xyz = np.zeros((self.numberOfObjects,3), dtype=np.float32)
-        for indx, obj in enumerate(self.objectPos):
+        for indx, obj in enumerate(objectPos):
             az = obj[0]
             el = obj[1]
             sph = np.asarray([az,el,1]) # Plane wave source, assume distance of 1m

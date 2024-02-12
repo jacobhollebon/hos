@@ -64,7 +64,7 @@ class HOSLoudspeakerDecoder( visr.CompositeComponent ):
                 headOrientation = None,
                 headPosition = None,
                 useHeadTracking = False,
-                usePositionTracking = False
+                usePositionTracking = False,
                 useYawOnly = True, 
                 useDelayCompensation = False,
                 useGainCompensation = False,
@@ -146,39 +146,39 @@ class HOSLoudspeakerDecoder( visr.CompositeComponent ):
             
             
             
-         # The encoding to create the HOS format is applied through a gain matrix
-         self.HOSLoudspeakerDecoder = rcl.GainMatrix(context, "HOSLoudspeakerDecodingMatrix", self,
-                                                numberOfInputs = numIn,
-                                                numberOfOutputs = numLoudspeakers,
-                                                interpolationSteps = interpolationSteps,
-                                                controlInput=True)
-         
-         # The decoding calculator accepts positions defining a loudspeaker array and creates coefficeints to decode HOS format to speaker signals 
-         self.decodingCalculator = HOSObjectEncoderController(  context, "DecodingCalculator", self,    
-                                                                numberOfLoudspeakers = numLoudspeakers,            
-                                                                loudspeakerPos = loudspeakerPos,          
-                                                                HOSOrder = HOSOrder,             
-                                                                HOSType  = HOSType,        
-                                                                beta = beta,              
-                                                                useHeadTracking = useHeadTracking,  
-                                                                initialOrientation = headOrientation,
-                                                                useYawOnly = useYawOnly, 
-                                                                usePositionTracking = usePositionTracking,
-                                                                initialPosition = headPosition,     
-                                                                useDelayCompensation = useDelayCompensation,
-                                                                useGainCompensation  = useGainCompensation )
+        # The encoding to create the HOS format is applied through a gain matrix
+        self.HOSLoudspeakerDecoder = rcl.GainMatrix(context, "HOSLoudspeakerDecodingMatrix", self,
+                                               numberOfInputs = numIn,
+                                               numberOfOutputs = numLoudspeakers,
+                                               interpolationSteps = interpolationSteps,
+                                               controlInput=True)
+        
+        # The decoding calculator accepts positions defining a loudspeaker array and creates coefficeints to decode HOS format to speaker signals 
+        self.decodingCalculator = HOSLoudspeakerDecoderController(  context, "DecodingCalculator", self,    
+                                                               numberOfLoudspeakers = numLoudspeakers,            
+                                                               loudspeakerPos = loudspeakerPos,          
+                                                               HOSOrder = HOSOrder,             
+                                                               HOSType  = HOSType,        
+                                                               beta = beta,              
+                                                               useHeadTracking = useHeadTracking,  
+                                                               initialOrientation = headOrientation,
+                                                               useYawOnly = useYawOnly, 
+                                                               usePositionTracking = usePositionTracking,
+                                                               initialPosition = headPosition,     
+                                                               useDelayCompensation = useDelayCompensation,
+                                                               useGainCompensation  = useGainCompensation )
         # Send the coefficients of the decoder from the calculator to the deocder matrix
-        self.parameterConnection( self.encodingCalculator.parameterPort("coefficientOutput"),
+        self.parameterConnection( self.decodingCalculator.parameterPort("coefficientOutput"),
                                   self.HOSLoudspeakerDecoder.parameterPort( "gainInput" ) )
         # If headTracking is specified connect the tracking input to the coefficient calculator
-        if headTracking:
+        if useHeadTracking:
             self.trackingInput = visr.ParameterInput( "tracking", self, pml.ListenerPosition.staticType,
                                           pml.DoubleBufferingProtocol.staticType,
                                           pml.EmptyParameterConfig() )
             self.parameterConnection( self.trackingInput,
                                       self.encodingCalculator.parameterPort("orientation") )  
          # If positionTracking is specified connect the position input to the coefficient calculator
-        if positionTracking:
+        if usePositionTracking:
             self.positionInput = visr.ParameterInput( "position", self, pml.ListenerPosition.staticType,
                                           pml.DoubleBufferingProtocol.staticType,
                                           pml.EmptyParameterConfig() )
@@ -224,8 +224,37 @@ class HOSLoudspeakerDecoder( visr.CompositeComponent ):
             self.audioConnection( self.HOSLoudspeakerDecoder.audioPort("out"), self.audioOut ) # Loudspeaker signals to output   
           
         
+
+if __name__ == "__main__":
+    fs = 48000
+    blockSize = 1024
+    context = visr.SignalFlowContext(blockSize, fs)
         
-        
+    # HOSOrder
+    order = 4
+    
+    # Loudspeaker Positions
+    numSpkrs = order+1 # miniumum required
+    az = np.deg2rad( np.linspace(-90,90,numSpkrs) ) # optimal spkr array pos, semicircle in front of listener
+    el = np.zeros(az.shape)
+    r  = np.ones(az.shape) # assume radially equidistant loudspeakers
+    spkrPos_sph = np.stack([az, el, r], axis=-1)
+
+    
+    decoder = HOSLoudspeakerDecoder(context, "decoder", None,     
+                                    loudspeakerPos=spkrPos_sph,           
+                                    HOSOrder = order,             
+                                    HOSType = 'Sine' ,       
+                                    beta = 0.001,   
+                                    interpolationSteps = None,
+                                    headOrientation = None,
+                                    headPosition = None,
+                                    useHeadTracking = False,
+                                    usePositionTracking = False,
+                                    useYawOnly = False, 
+                                    useDelayCompensation = False,
+                                    useGainCompensation = False,
+                                    )
         
         
         
