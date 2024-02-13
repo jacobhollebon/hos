@@ -146,7 +146,7 @@ class HOSObjectEncoder( visr.CompositeComponent ):
                                     self.HOSObjectEncoder.parameterPort( "gainInput" ) )
         
         # If headTracking is specified connect the tracking input to the coefficient calculator
-        if headTracking:
+        if useHeadTracking:
             self.trackingInput = visr.ParameterInput( "tracking", self, pml.ListenerPosition.staticType,
                                           pml.DoubleBufferingProtocol.staticType,
                                           pml.EmptyParameterConfig() )
@@ -179,7 +179,7 @@ if __name__ == "__main__":
                                 HOSType = 'Sine',
                                 interpolationSteps = None,
                                 headOrientation = None,
-                                headTracking = False,
+                                useHeadTracking = False,
                                 useYawOnly = False,
                                 )
         
