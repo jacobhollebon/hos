@@ -321,13 +321,10 @@ if __name__ == "__main__":
     ax1.set_ylim(clip[0],clip[1])
     ax1.set_xlim(-90,90)
     ax1.set_xticks([-90, -45, 0, 45,90])
-    # ax2.set_xticks([0,0.25,0.5,0.75,1])
-    # ax2.set_xticklabels([-90,-45,0,45,90])
     ax2.set_xticks([-90,-45,0,45,90])
     ax2.set_xlim(-90,90)
     ax2.set_xlabel('Azimuth (Deg)')
 
-    #        ax1.legend(loc=4, ncol=numcol)
     if numSpkrs > 6: # Double column legend for many loudspeakers
         numcol=2
     elif numSpkrs > 8: # Double column legend for many loudspeakers

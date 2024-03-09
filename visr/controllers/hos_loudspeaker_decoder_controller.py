@@ -51,10 +51,10 @@ class HOSLoudspeakerDecoderController( visr.AtomicComponent ):
     Optional 6DOF, 4DOF, 3DOF or 1DOF headtracking to perform Dynamic HOS 
     The orientation headtracking may be reduced to 1DOF (yaw only) e.g useful for 
     horizontal loudspeaker rendering
-    6DOF: usePositionTracking = True,  useHeadTracking = True, useYawOnly = False
-    4DOF: usePositionTracking = True,  useHeadTracking = False, useYawOnly = False
-    3DOF: usePositionTracking = False, useHeadTracking = True, useYawOnly = False
-    1DOF: usePositionTracking = False, useHeadTracking = True, useYawOnly = True
+    6DOF: usePositionTracking = True,  useOrientationTracking = True, useYawOnly = False
+    4DOF: usePositionTracking = True,  useOrientationTracking = False, useYawOnly = False
+    3DOF: usePositionTracking = False, useOrientationTracking = True, useYawOnly = False
+    1DOF: usePositionTracking = False, useOrientationTracking = True, useYawOnly = True
     
     Optional array compensation (dynamic loudspeaker delay alignment and/or 
     dynamic gain compensation w.r.t current listener position)
@@ -67,7 +67,7 @@ class HOSLoudspeakerDecoderController( visr.AtomicComponent ):
                   HOSOrder = 0,             # Order of the HOS encoding
                   HOSType = 'Sine' ,        # What type of HOS encoding
                   beta = None,              # Regularisation parameter for the pseudoinversion
-                  useHeadTracking = False,  # Whether head tracking data is provided via a self.headOrientation port.
+                  useOrientationTracking = False,  # Whether head tracking data is provided via a self.headOrientation port.
                   initialOrientation = None,
                   useYawOnly = True, 
                   usePositionTracking = False,
@@ -100,9 +100,9 @@ class HOSLoudspeakerDecoderController( visr.AtomicComponent ):
             Ensures angles are correctly identified depending on which axis the reproduction is along.
         beta: float
             Regularisation parameter for inversion of plant matrix. If left None, then no regularisation will be used.
-        useHeadTracking: bool
+        useOrientationTracking: bool
             Whether the orientation is updated at runtime. If True, a parmater input
-            "orientation" is instantiated that receivers pml.ListenerPositions
+            "tracking" is instantiated that receivers pml.ListenerPositions
         initialOrientation: array-like (length 3) or NoneType
             The initial head rotation or the static head orientation if dynamic updates are deactivated. 
             Given as yaw, pitch, roll in radians
@@ -112,7 +112,7 @@ class HOSLoudspeakerDecoderController( visr.AtomicComponent ):
             If True the pitch and roll of the listener orientation is ignored
         usePositionTracking: bool
             Whether the position is updated at runtime. If True, a parmater input
-            "position" is instantiated that receivers pml.ListenerPositions
+            "tracking" is instantiated that receivers pml.ListenerPositions
         initialPosition: array-like (length 3) or NoneType
             The initial listener position or the static listener position if dynamic updates are deactivated. 
             Given as [x, y, z] in m
@@ -149,8 +149,8 @@ class HOSLoudspeakerDecoderController( visr.AtomicComponent ):
         # Encoding coefficient output ports
         self.coeffOutput = visr.ParameterOutput( "coefficientOutput", self,
                                                 pml.MatrixParameterFloat.staticType,
-                                                pml.DoubleBufferingProtocol.staticType,
-                                                pml.MatrixParameterConfig(self.numHOSCoeffs, self.numberOfLoudspeakers))
+                                                pml.SharedDataProtocol.staticType,
+                                                pml.MatrixParameterConfig(self.numberOfLoudspeakers, self.numHOSCoeffs))
         self.coeffOutputProtocol = self.coeffOutput.protocolOutput()
         if self.useDelayCompensation:
             outConfigDelays = pml.VectorParameterConfig( self.numberOfLoudspeakers )
@@ -167,23 +167,15 @@ class HOSLoudspeakerDecoderController( visr.AtomicComponent ):
                                                     outConfigGains )
             self.gainOutputProtocol = self.gainOutput.protocolOutput()
         
-
-        # Tracking input ports
-        if useHeadTracking:
-            self.orientationInput = visr.ParameterInput( "orientation", self, pml.ListenerPosition.staticType,
-                                                      pml.DoubleBufferingProtocol.staticType,
-                                                      pml.EmptyParameterConfig() )
-            self.orientationInputProtocol = self.orientationInput.protocolInput()
-        else:
-            self.orientationInputProtocol = None
-        if usePositionTracking:
-            self.positionInput = visr.ParameterInput( "position", self, pml.ListenerPosition.staticType,
-                                                      pml.DoubleBufferingProtocol.staticType,
-                                                      pml.EmptyParameterConfig() )
-            self.positionInputProtocol = self.positionInput.protocolInput()
-        else:
-            self.positionInputProtocol = None
             
+        if useOrientationTracking or usePositionTracking:
+            self.listenerInput = visr.ParameterInput( "tracking", self, pml.ListenerPosition.staticType,
+                                                      pml.DoubleBufferingProtocol.staticType,
+                                                      pml.EmptyParameterConfig() )
+            self.listenerInputProtocol = self.listenerInput.protocolInput()
+        else:
+            self.listenerInputProtocol = None
+      
 
             
         # Perform one process loop offline to create initial coefficients
@@ -219,7 +211,7 @@ class HOSLoudspeakerDecoderController( visr.AtomicComponent ):
             self.radius = self.loudspeakerPos_rel2lis[:,2]
             if self.useDelayCompensation:
                 # Delays that 'push' closer speakers acoustically back to the radius of the further speaker
-                self.delays = (np.max(self.radius) - self.radius) / 343 
+                self.delays = (np.max(self.radius) - self.radius) / self.c 
             if self.useGainCompensation:
                 # Furthest speaker has gain of 1
                 # Attenuate closer speakers by 1/4piR with R relative difference to furthest speaker
@@ -230,7 +222,10 @@ class HOSLoudspeakerDecoderController( visr.AtomicComponent ):
         self.HOSAngles = hos.calculateHOSAngle(self.loudspeakerPos_xyz_rel2lis, self.hhat) # Loudspeaker angles w.r.t listener frame
         plant = hos.calculateHOSPlant(self.HOSAngles, self.HOSOrder, HOSType=self.HOSType) 
         self.decoder = hos.calculateHOSDecoder( plant, self.HOSOrder, beta=self.beta )
-
+        
+        # save curr ypr and position
+        self.lastYPR = initialOrientation
+        self.lastPos = initialPosition
         
     def process( self ):
         """
@@ -238,49 +233,59 @@ class HOSLoudspeakerDecoderController( visr.AtomicComponent ):
         """
         
         recalculateFlag = False
-        # If orientation data recieved calculate new hhat
-        if (self.orientationInputProtocol is not None ) and self.orientationInputProtocol.changed():
-            head = self.orientationInputProtocol.data()
-            ypr = np.array(head.orientation, dtype = np.float32 ) # Euler angles YPR orientation
-            
-            # Calculate hhat, vector pointing in direction of listener look / x axis in listenter frame
-            if self.useYawOnly:  # yaw only orientation handling
+        # If new listener input recalculate orientation or position as appropriate
+        if (self.listenerInputProtocol is not None ) and self.listenerInputProtocol.changed():
+            listener = self.listenerInputProtocol.data()
+            if self.useOrientationTracking:
+                ypr = np.array(listener.orientation, dtype = np.float32 ) # Euler angles YPR orientation
+            else:
+                ypr = self.lastYPR # use initialOrientation
+            if self.usePositionTracking:
+                pos = np.array(listener.position, dtype = np.float32 ) # Cartesian position
+            else:
+                pos = self.lastPos # use initialPosition
+                
+            # yaw only orientation handling
+            if self.useYawOnly:  
                 ypr[1:] = 0
-            self.hhat = applyRotation( [1,0,0], ypr ) # listener orientation axis
+                    
+            if ypr != self.lastYPR:
+                # Calculate hhat, vector pointing in direction of listener look / x axis in listenter frame
+                self.hhat = applyRotation( [1,0,0], ypr ) # listener orientation axis
+                self.lastYPR = ypr
+                recalculateFlag = True
             
-            self.orientationInputProtocol.resetChanged()
-            recalculateFlag = True
+            if pos != self.lastPos:
+                # Spkr positions relative to listener position
+                self.loudspeakerPos_xyz_rel2lis = self.loudspeakerPos_xyz - pos 
+                self.lastPos = pos
+                recalculateFlag = True
+                
+                # Speaker compensation step
+                if self.useDelayCompensation or self.useGainCompensation:
+                    self.loudspeakerPos_rel2lis = cart2sph( self.loudspeakerPos_xyz_rel2lis[0], self.loudspeakerPos_xyz_rel2lis[1], self.loudspeakerPos_xyz_rel2lis[2] )
+                    self.radius = self.loudspeakerPos_rel2lis[:,2]
+                    if self.useDelayCompensation:
+                        # Delays that 'push' closer speakers acoustically back to the radius of the further speaker
+                        self.delays = (np.max(self.radius) - self.radius) / self.c 
+                    if self.useGainCompensation:
+                        # Furthest speaker has gain of 1
+                        # Attenuate closer speakers by 1/4piR with R relative difference to furthest speaker
+                        # So only attenuate the minimum amount necessary 
+                        self.gains = 1/(4*np.pi*(np.max(self.radius) - self.radius))
             
-        # If position data recieved calculate new relative loudspeaker positions
-        if (self.positionInputProtocol is not None ) and self.positionInputProtocol.changed():
-            self.loudspeakerPos_xyz_rel2lis = self.loudspeakerPos_xyz - initialPosition # Spkr pos relative to listener position
-            
-            # Compensation step
-            if self.useDelayCompensation or self.useGainCompensation:
-                self.loudspeakerPos_rel2lis = cart2sph( self.loudspeakerPos_xyz_rel2lis[0], self.loudspeakerPos_xyz_rel2lis[1], self.loudspeakerPos_xyz_rel2lis[2] )
-                self.radius = self.loudspeakerPos_rel2lis[:,2]
-                if self.useDelayCompensation:
-                    # Delays that 'push' closer speakers acoustically back to the radius of the further speaker
-                    self.delays = (np.max(self.radius) - self.radius) / 343 
-                if self.useGainCompensation:
-                    # Furthest speaker has gain of 1
-                    # Attenuate closer speakers by 1/4piR with R relative difference to furthest speaker
-                    # So only attenuate the minimum amount necessary 
-                    self.gains = 1/(4*np.pi*(np.max(self.radius) - self.radius))
-            
-            self.positionInputProtocol.resetChanged()
-            recalculateFlag = True
-           
+            self.listenerInputProtocol.resetChanged()
+        
+      
         if recalculateFlag:
             # Calculate Plant Matrix (encoding coefficents for each loudspeaker from each given direction)
             self.HOSAngles = hos.calculateHOSAngle(self.loudspeakerPos_xyz_rel2lis, self.hhat) # Loudspeaker angles w.r.t listener frame
             plant = hos.calculateHOSPlant(self.HOSAngles, self.HOSOrder, HOSType=self.HOSType) 
             self.decoder = hos.calculateHOSDecoder( plant, self.HOSOrder, beta=self.beta )
-            
         
         # Output the decoder coefficients 
         coeffOut = np.array(self.coeffOutputProtocol.data(), copy=False)
-        coeffOut[:] = self.decoder
+        coeffOut[:] = self.decoder.T
         self.coeffOutputProtocol.swapBuffers()
         
         # Output compensation coefficients
@@ -292,6 +297,8 @@ class HOSLoudspeakerDecoderController( visr.AtomicComponent ):
              gainOut = np.array( self.gainOutputProtocol.data(), copy = False )
              gainOut[:] = self.gains
              self.gainOutputProtocol.swapBuffers()
+             
+        
             
             
 

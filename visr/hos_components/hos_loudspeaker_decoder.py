@@ -63,7 +63,7 @@ class HOSLoudspeakerDecoder( visr.CompositeComponent ):
                 interpolationSteps = None,
                 headOrientation = None,
                 headPosition = None,
-                useHeadTracking = False,
+                useOrientationTracking = False,
                 usePositionTracking = False,
                 useYawOnly = True, 
                 useDelayCompensation = False,
@@ -94,12 +94,12 @@ class HOSLoudspeakerDecoder( visr.CompositeComponent ):
         interpolationSteps: int, optional
            Number of samples to transition to new coefficients in processing blocks after an update.
         headOrientation : array-like
-            Head orientation in spherical coordinates (3-element vector or list). Either a static orientation (when no tracking is used),
+            Head orientation as yaw pitch roll in radians (3-element vector or list). Either a static orientation (when no tracking is used),
             or the initial view direction
         headPosition : array-like
             Head position in x y z cartesian coordinates (3-element vector or list). Either a static position (when no tracking is used),
             or the initial position 
-        useHeadTracking: bool
+        useOrientationTracking: bool
             Whether dynamic head tracking (rotation) is active.
             Opens up top level parameter port named "orientation" to recieve a pml.ListenerPosition object
         usePositionTracking: bool
@@ -109,19 +109,15 @@ class HOSLoudspeakerDecoder( visr.CompositeComponent ):
             If False listener head orientation is tracked w.r.t 3DOF
             If True the pitch and roll of the listener orientation is ignored
         useDelayCompensation: bool
-            If True an output port named "delayOutput" is inistitated that
-            outputs a delay per loudspeaker to time align them w.r.t the current
-            listener position, such that the array is radially acousticall equidistant
+            If True the loudspeakers are time aligned w.r.t to the head center of the current
+            listener cartesian position, such that the array is radially acousticall equidistant
             Note the delays are minimised such that the furthest loudspeaker has 0 delay
-            Should be connected to a delay vector component at a higher level
         useGainCompensation: bool
-            If True an output port named "gainOutput" is inistitated that
-            outputs a linear gain value per loudspeaker to account for different spherical spreading
-            attenuation, such that all loudspeakers are volume normalised at the the current 
-            listener position.
+            If True the loudspeakers are compensated by a gain to account for different spherical spreading
+            attenuation, such that all loudspeakers are volume normalised at the head center of the current 
+            listener cartesian position.
             Note the gains are normalised such the furthest loudspeaker has a gain of 1
             and all other gains are attenuations (no amplification)
-            Should be connected to a gain or delay vector component at a higher level
         """
         
         super( HOSLoudspeakerDecoder, self ).__init__( context, name, parent )     
@@ -148,7 +144,7 @@ class HOSLoudspeakerDecoder( visr.CompositeComponent ):
             
             
             
-        # The encoding to create the HOS format is applied through a gain matrix
+        # The decoder is a simple gain matrix applied to the HOS format
         self.HOSLoudspeakerDecoder = rcl.GainMatrix(context, "HOSLoudspeakerDecodingMatrix", self,
                                                numberOfInputs = numIn,
                                                numberOfOutputs = numLoudspeakers,
@@ -162,7 +158,7 @@ class HOSLoudspeakerDecoder( visr.CompositeComponent ):
                                                                HOSOrder = HOSOrder,             
                                                                HOSType  = HOSType,        
                                                                beta = beta,              
-                                                               useHeadTracking = useHeadTracking,  
+                                                               useOrientationTracking = useOrientationTracking,  
                                                                initialOrientation = headOrientation,
                                                                useYawOnly = useYawOnly, 
                                                                usePositionTracking = usePositionTracking,
@@ -173,20 +169,12 @@ class HOSLoudspeakerDecoder( visr.CompositeComponent ):
         self.parameterConnection( self.decodingCalculator.parameterPort("coefficientOutput"),
                                   self.HOSLoudspeakerDecoder.parameterPort( "gainInput" ) )
         # If headTracking is specified connect the tracking input to the coefficient calculator
-        if useHeadTracking:
+        if useOrientationTracking or usePositionTracking:
             self.trackingInput = visr.ParameterInput( "tracking", self, pml.ListenerPosition.staticType,
                                           pml.DoubleBufferingProtocol.staticType,
                                           pml.EmptyParameterConfig() )
             self.parameterConnection( self.trackingInput,
-                                      self.encodingCalculator.parameterPort("orientation") )  
-         # If positionTracking is specified connect the position input to the coefficient calculator
-        if usePositionTracking:
-            self.positionInput = visr.ParameterInput( "position", self, pml.ListenerPosition.staticType,
-                                          pml.DoubleBufferingProtocol.staticType,
-                                          pml.EmptyParameterConfig() )
-            self.parameterConnection( self.positionInput,
-                                      self.decodingCalculator.parameterPort("position") )   
-             
+                                      self.decodingCalculator.parameterPort("tracking") )  
             
          
         # Optional dynamic array calibration
@@ -201,11 +189,10 @@ class HOSLoudspeakerDecoder( visr.CompositeComponent ):
             self.parameterConnection( self.decodingCalculator.parameterPort("delayOutput"),
                                       self.delayCalibration.parameterPort("delayInput") )  
         if useGainCompensation:
-            self.gainCalibration = rcl.GainVector( context, "GainCalibration", self, 
+            self.gainCalibration = rcl.GainVector( context, "GainCalibration", None, 
                                                      numberOfChannels=numLoudspeakers, 
-                                                     initialDelay=initialDelays, 
-                                                     initialGain=initialGains, 
-                                                     controlInputs=rcl.GainVector.ControlPortConfig.Gain)
+                                                     initialGain=1.0, 
+                                                     controlInputs = True)
             self.parameterConnection( self.decodingCalculator.parameterPort("gainOutput"),
                                       self.gainCalibration.parameterPort("gainInput") )  
             
@@ -251,10 +238,10 @@ if __name__ == "__main__":
                                     interpolationSteps = None,
                                     headOrientation = None,
                                     headPosition = None,
-                                    useHeadTracking = False,
+                                    useOrientationTracking = False,
                                     usePositionTracking = False,
                                     useYawOnly = False, 
-                                    useDelayCompensation = False,
+                                    useDelayCompensation = True,
                                     useGainCompensation = False,
                                     )
         

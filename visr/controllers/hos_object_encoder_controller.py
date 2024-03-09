@@ -60,7 +60,7 @@ class HOSObjectEncoderController( visr.AtomicComponent ):
                   objectPos = None,         # Initial positions of the objects
                   HOSOrder = 0,             # Order of the HOS encoding
                   HOSType = 'Sine' ,        # What type of HOS encoding
-                  useHeadTracking = False,  # Whether head tracking data is provided via a self.headOrientation port.
+                  useOrientationTracking = False,  # Whether head tracking data is provided via a self.headOrientation port.
                   useYawOnly = True, 
                   initialOrientation = None):
         """
@@ -86,12 +86,13 @@ class HOSObjectEncoderController( visr.AtomicComponent ):
         HOSType: string
            Type of HOS Representation, either 'Sine' (y axis reconstruction) or 'Cosine' (x axis reconstruction). 
            Ensures angles are correctly identified depending on which axis the reproduction is along.
-        useHeadTracking: bool
+        useOrientationTracking: bool
             Whether the orientation is updated at runtime. If True, a parmater input
-            "orientation" is instantiated that receivers pml.ListenerPositions
+            "tracking" is instantiated that receivers pml.ListenerPositions
         initialOrientation: array-like (length 3) or NoneType
             The initial head rotation or the static head orientation if dynamic updates are deactivated. 
             Given as yaw, pitch, roll in radians
+            If None supplied, listener assumed to be facing forwards
         useYawOnly: bool
             If False listener head orientation is tracked w.r.t 3DOF
             If True the pitch and roll of the listener orientation is ignored
@@ -109,8 +110,8 @@ class HOSObjectEncoderController( visr.AtomicComponent ):
         # Encoding coefficient output ports
         self.coeffOutput = visr.ParameterOutput( "coefficientOutput", self,
                                                 pml.MatrixParameterFloat.staticType,
-                                                pml.DoubleBufferingProtocol.staticType,
-                                                pml.MatrixParameterConfig(self.numberOfObjects, self.numHOSCoeffs))
+                                                pml.SharedDataProtocol.staticType,
+                                                pml.MatrixParameterConfig(self.numHOSCoeffs, self.numberOfObjects))
         self.coeffOutputProtocol = self.coeffOutput.protocolOutput()
 
         # Object metadata input port
@@ -120,13 +121,13 @@ class HOSObjectEncoderController( visr.AtomicComponent ):
         self.objectInputProtocol = self.objectInput.protocolInput()
 
         # Headtracking input ports
-        if useHeadTracking:
-            self.orientationInput = visr.ParameterInput( "orientation", self, pml.ListenerPosition.staticType,
+        if useOrientationTracking:
+            self.listenerInput = visr.ParameterInput( "tracking", self, pml.ListenerPosition.staticType,
                                                       pml.DoubleBufferingProtocol.staticType,
                                                       pml.EmptyParameterConfig() )
-            self.orientationInputProtocol = self.orientationInput.protocolInput()
+            self.listenerInputProtocol = self.listenerInput.protocolInput()
         else:
-            self.orientationInputProtocol = None
+            self.listenerInputProtocol = None
             
             
         # Perform one process loop offline to create initial coefficients
@@ -175,9 +176,9 @@ class HOSObjectEncoderController( visr.AtomicComponent ):
         recalculateFlag = False
         
         # If orientation data recieved calculate new hhat
-        if (self.orientationInputProtocol is not None ) and self.orientationInputProtocol.changed():
-            head = self.orientationInputProtocol.data()
-            ypr = np.array(head.orientation, dtype = np.float32 ) # Euler angles YPR orientation
+        if (self.listenerInputProtocol is not None ) and self.listenerInputProtocol.changed():
+            listener = self.listenerInputProtocol.data()
+            ypr = np.array(listener.orientation, dtype = np.float32 ) # Euler angles YPR orientation
             
             # Calculate hhat, vector pointing in direction of listener look / x axis in listenter frame
             if self.useYawOnly:  # yaw only orientation handling
@@ -185,7 +186,7 @@ class HOSObjectEncoderController( visr.AtomicComponent ):
             self.hhat = applyRotation( [1,0,0], ypr ) # listener orientation axis
             
             recalculateFlag = True
-            self.orientationInputProtocol.resetChanged()
+            self.listenerInputProtocol.resetChanged()
             
         # If new object vector recieved, recalculate the source positions
         if self.objectInputProtocol.changed():
@@ -204,8 +205,8 @@ class HOSObjectEncoderController( visr.AtomicComponent ):
                         sph = cart2sph( p[0], p[1], p[2] )
 #                            print("\r" + "Object " + str(np.rad2deg(sph)), end="")
                     elif isinstance( src, om.PlaneWave ):
-                        AZ = deg2rad( src.azimuth )
-                        EL = deg2rad( src.elevation )
+                        AZ = np.deg2rad( src.azimuth )
+                        EL = np.deg2rad( src.elevation )
                         R = src.referenceDistance
                         sph = np.asarray([AZ,EL,R])
 #                            print("\r" + "PW " + str(np.rad2deg(sph)), end="")
@@ -232,7 +233,7 @@ class HOSObjectEncoderController( visr.AtomicComponent ):
         
         # Output the encoding coefficients 
         coeffOut = np.array(self.coeffOutputProtocol.data(), copy=False)
-        coeffOut[:] = self.srcEncoder
+        coeffOut[:] = self.srcEncoder.T
         self.coeffOutputProtocol.swapBuffers()
         
         

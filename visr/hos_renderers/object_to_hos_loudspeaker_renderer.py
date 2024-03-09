@@ -51,7 +51,7 @@ class ObjectToHOSLoudspeakerRenderer(visr.CompositeComponent ):
     
     Compensation for listener rotations (encoder and decoder) and/or translations (decoder only) is optionally included 
     
-    Dynamic delay and/or gain calibration of the loudspeaker array is optionally included to ensure the array is acoustical equidistant
+    Dynamic delay and/or gain calibration of the loudspeaker array is optionally included to ensure the array is acoustically equidistant
     """
     def __init__( self,
                  context, name, parent,
@@ -63,7 +63,7 @@ class ObjectToHOSLoudspeakerRenderer(visr.CompositeComponent ):
                  HOSType = 'Sine',     
                  headOrientation = None,
                  headPosition = None,
-                 useHeadTracking = False,
+                 useOrientationTracking = False,
                  usePositionTracking = False,
                  useYawOnly = True, 
                  beta = None,   
@@ -91,45 +91,41 @@ class ObjectToHOSLoudspeakerRenderer(visr.CompositeComponent ):
             Starting positions of the objects. 
             Second dimension containing (azimuth, elevation) of the sources in rads
         sceneReceiveUdpPort: int, optional
-            A UDP port number where scene object metadata (in the S3A JSON format) is to be received).
+            A UDP port number where scene object metadata (in the S3A JSON format) is to be received.
             If not given (default), no network receiver is instantiated, and the object exposes a
-            top-level parameter input port "objects"   
+            top-level parameter input port "objects" expecting a pml.ObjectVector containing the scene description
         HOSOrder: int
-            Order of the HOS encoding
+            Order of the HOS rendering (encoding and decoding)
         HOSType: string
             Type of HOS Representation, either 'Sine' (y axis reconstruction) or 'Cosine' (x axis reconstruction). 
             Ensures angles are correctly identified depending on which axis the reproduction is along.
-         headOrientation : array-like
-             Head orientation in spherical coordinates (or 3-element vector or list). Either a static orientation (when no tracking is used),
-             or the initial view direction
-         headPosition : array-like
-             Head position in x y z cartesian coordinates (3-element vector or list). Either a static position (when no tracking is used),
-             or the initial position 
-         useHeadTracking: bool
-             Whether dynamic head tracking (rotation) is active.
-             Opens up top level parameter port named "orientation" to recieve a pml.ListenerPosition object
-         usePositionTracking: bool
-             Whether dynamic head tracking (position) is active.
-             Opens up top level parameter port named "position" to recieve a pml.ListenerPosition object
+        headOrientation : array-like
+            Head orientation as yaw pitch roll in radians (3-element vector or list). Either a static orientation (when no tracking is used),
+            or the initial view direction
+        headPosition : array-like
+            Head position in x y z cartesian coordinates (3-element vector or list). Either a static position (when no tracking is used),
+            or the initial position 
+        useOrientationTracking: bool
+            Whether dynamic head tracking (rotation) is active.
+            Opens up top level parameter port named "tracking" to recieve a pml.ListenerPosition object
+        usePositionTracking: bool
+            Whether dynamic head tracking (position) is active.
+            Opens up top level parameter port named "tracking" to recieve a pml.ListenerPosition object
         useYawOnly: bool
             If False listener head orientation is tracked w.r.t 3DOF
             If True the pitch and roll of the listener orientation is ignored
         beta: float
             Regularisation parameter for inversion of plant matrix. If left None, then no regularisation will be used.
         useDelayCompensation: bool
-            If True an output port named "delayOutput" is inistitated that
-            outputs a delay per loudspeaker to time align them w.r.t the current
-            listener position, such that the array is radially acousticall equidistant
+            If True the loudspeakers are time aligned w.r.t to the head center of the current
+            listener cartesian position, such that the array is radially acousticall equidistant
             Note the delays are minimised such that the furthest loudspeaker has 0 delay
-            Should be connected to a delay vector component at a higher level
         useGainCompensation: bool
-            If True an output port named "gainOutput" is inistitated that
-            outputs a linear gain value per loudspeaker to account for different spherical spreading
-            attenuation, such that all loudspeakers are volume normalised at the the current 
-            listener position.
+            If True the loudspeakers are compensated by a gain to account for different spherical spreading
+            attenuation, such that all loudspeakers are volume normalised at the head center of the current 
+            listener cartesian position.
             Note the gains are normalised such the furthest loudspeaker has a gain of 1
             and all other gains are attenuations (no amplification)
-            Should be connected to a gain or delay vector component at a higher level
         """
 
         super( ObjectToHOSLoudspeakerRenderer, self ).__init__( context, name, parent )
@@ -154,7 +150,7 @@ class ObjectToHOSLoudspeakerRenderer(visr.CompositeComponent ):
                                                     HOSType = HOSType,
                                                     interpolationSteps = None,
                                                     headOrientation = headOrientation,
-                                                    useHeadTracking = useHeadTracking,
+                                                    useOrientationTracking = useOrientationTracking,
                                                     useYawOnly = useYawOnly
                                                     )
         # Set up the object metadata port or receiver and patch it to the object encoder
@@ -187,7 +183,7 @@ class ObjectToHOSLoudspeakerRenderer(visr.CompositeComponent ):
                                                              interpolationSteps = None,
                                                              headOrientation = headOrientation,
                                                              headPosition = headPosition,
-                                                             useHeadTracking = useHeadTracking,
+                                                             useOrientationTracking = useOrientationTracking,
                                                              usePositionTracking = usePositionTracking,
                                                              useYawOnly = useYawOnly, 
                                                              useDelayCompensation = useDelayCompensation,
@@ -195,19 +191,16 @@ class ObjectToHOSLoudspeakerRenderer(visr.CompositeComponent ):
                                                              )
         
         # Orientation and position tracking ports
-        if useHeadTracking:
-            self.trackingInput = visr.ParameterInput( "orientation", self, pml.ListenerPosition.staticType,
+        if useOrientationTracking or usePositionTracking:
+            self.trackingInput = visr.ParameterInput( "tracking", self, pml.ListenerPosition.staticType,
                                           pml.DoubleBufferingProtocol.staticType,
                                           pml.EmptyParameterConfig() )
+        if useOrientationTracking:
             self.parameterConnection( self.trackingInput, self.HOSObjectEncoder.parameterPort("tracking"))
             self.parameterConnection( self.trackingInput, self.HOSLoudspeakerDecoder.parameterPort("tracking"))
-        if usePositionTracking:
-            self.positionInput = visr.ParameterInput( "position", self, pml.ListenerPosition.staticType,
-                                          pml.DoubleBufferingProtocol.staticType,
-                                          pml.EmptyParameterConfig() )
-            self.parameterConnection( self.positionInput, self.HOSLoudspeakerDecoder.parameterPort("position"))
-
-        
+        elif (not useOrientationTracking) and usePositionTracking:
+            self.parameterConnection( self.trackingInput, self.HOSLoudspeakerDecoder.parameterPort("tracking"))
+       
             
         # Audio Connections
         self.audioConnection( self.objectSignalInput, self.HOSObjectEncoder.audioPort("audioIn")) # Audio input to HOS object Encoder 
@@ -250,7 +243,7 @@ if __name__ == "__main__":
                                             HOSType = 'Sine',     
                                             headOrientation = None,
                                             headPosition = None,
-                                            useHeadTracking = False,
+                                            useOrientationTracking = False,
                                             usePositionTracking = False,
                                             useYawOnly = False, 
                                             beta = None,   

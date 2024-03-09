@@ -35,7 +35,7 @@
 # http://cvssp.org/data/s3a/public/VISR .
 
     
-import visr, rbbl, pml, rcl
+import visr, pml, rcl
 from hos_object_encoder_controller import HOSObjectEncoderController
 
 class HOSObjectEncoder( visr.CompositeComponent ):
@@ -58,7 +58,7 @@ class HOSObjectEncoder( visr.CompositeComponent ):
                  HOSType = 'Sine',
                  interpolationSteps = None,
                  headOrientation = None,
-                 useHeadTracking = False,
+                 useOrientationTracking = False,
                  useYawOnly = False,
                  ):
         """ 
@@ -89,9 +89,9 @@ class HOSObjectEncoder( visr.CompositeComponent ):
         headOrientation : array-like
             The initial head rotation or the static head orientation if dynamic updates are deactivated. 
             Given as yaw, pitch, roll in radians
-        useHeadTracking: bool
+        useOrientationTracking: bool
             Whether the orientation is updated at runtime. If True, a parmater input
-            "orientation" is instantiated that receivers pml.ListenerPositions
+            "tracking" is instantiated that receivers pml.ListenerPositions
         useYawOnly: bool
             If False listener head orientation is tracked w.r.t 3DOF
             If True the pitch and roll of the listener orientation is ignored
@@ -131,7 +131,7 @@ class HOSObjectEncoder( visr.CompositeComponent ):
                                                                objectPos = objectPos,
                                                                HOSOrder = HOSOrder,             
                                                                HOSType = HOSType,    
-                                                               useHeadTracking = useHeadTracking,  
+                                                               useOrientationTracking = useOrientationTracking,  
                                                                initialOrientation = headOrientation,
                                                                useYawOnly = useYawOnly)
         
@@ -146,12 +146,12 @@ class HOSObjectEncoder( visr.CompositeComponent ):
                                     self.HOSObjectEncoder.parameterPort( "gainInput" ) )
         
         # If headTracking is specified connect the tracking input to the coefficient calculator
-        if useHeadTracking:
+        if useOrientationTracking:
             self.trackingInput = visr.ParameterInput( "tracking", self, pml.ListenerPosition.staticType,
                                           pml.DoubleBufferingProtocol.staticType,
                                           pml.EmptyParameterConfig() )
             self.parameterConnection( self.trackingInput,
-                                     self.encodingCalculator.parameterPort("orientation") )  
+                                     self.encodingCalculator.parameterPort("tracking") )  
         
         
         # Audio connections 
@@ -179,7 +179,7 @@ if __name__ == "__main__":
                                 HOSType = 'Sine',
                                 interpolationSteps = None,
                                 headOrientation = None,
-                                useHeadTracking = False,
+                                useOrientationTracking = False,
                                 useYawOnly = False,
                                 )
         
