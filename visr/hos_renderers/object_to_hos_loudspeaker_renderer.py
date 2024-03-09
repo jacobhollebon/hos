@@ -176,19 +176,19 @@ class ObjectToHOSLoudspeakerRenderer(visr.CompositeComponent ):
 
         # Decode the HOS format to loudspeaker signals, using Dynamic (head-tracked) HOS panning
         self.HOSLoudspeakerDecoder = HOSLoudspeakerDecoder( context, "HOSLoudspeakerDecoder", self,
-                                                             loudspeakerPos,           
-                                                             HOSOrder = HOSOrder,        
-                                                             HOSType = HOSType,
-                                                             beta = beta,
-                                                             interpolationSteps = None,
-                                                             headOrientation = headOrientation,
-                                                             headPosition = headPosition,
-                                                             useOrientationTracking = useOrientationTracking,
-                                                             usePositionTracking = usePositionTracking,
-                                                             useYawOnly = useYawOnly, 
-                                                             useDelayCompensation = useDelayCompensation,
-                                                             useGainCompensation = useGainCompensation,
-                                                             )
+                                                              loudspeakerPos,           
+                                                              HOSOrder = HOSOrder,        
+                                                              HOSType = HOSType,
+                                                              beta = beta,
+                                                              interpolationSteps = None,
+                                                              headOrientation = headOrientation,
+                                                              headPosition = headPosition,
+                                                              useOrientationTracking = useOrientationTracking,
+                                                              usePositionTracking = usePositionTracking,
+                                                              useYawOnly = useYawOnly, 
+                                                              useDelayCompensation = useDelayCompensation,
+                                                              useGainCompensation = useGainCompensation,
+                                                              )
         
         # Orientation and position tracking ports
         if useOrientationTracking or usePositionTracking:

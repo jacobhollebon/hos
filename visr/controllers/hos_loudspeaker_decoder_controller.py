@@ -207,7 +207,7 @@ class HOSLoudspeakerDecoderController( visr.AtomicComponent ):
         
         # Compensation step
         if self.useDelayCompensation or self.useGainCompensation:
-            self.loudspeakerPos_rel2lis = cart2sph( self.loudspeakerPos_xyz_rel2lis[0], self.loudspeakerPos_xyz_rel2lis[1], self.loudspeakerPos_xyz_rel2lis[2] )
+            self.loudspeakerPos_rel2lis = cart2sph( self.loudspeakerPos_xyz_rel2lis[:,0], self.loudspeakerPos_xyz_rel2lis[:,1], self.loudspeakerPos_xyz_rel2lis[:,2] )
             self.radius = self.loudspeakerPos_rel2lis[:,2]
             if self.useDelayCompensation:
                 # Delays that 'push' closer speakers acoustically back to the radius of the further speaker
@@ -263,7 +263,7 @@ class HOSLoudspeakerDecoderController( visr.AtomicComponent ):
                 
                 # Speaker compensation step
                 if self.useDelayCompensation or self.useGainCompensation:
-                    self.loudspeakerPos_rel2lis = cart2sph( self.loudspeakerPos_xyz_rel2lis[0], self.loudspeakerPos_xyz_rel2lis[1], self.loudspeakerPos_xyz_rel2lis[2] )
+                    self.loudspeakerPos_rel2lis = cart2sph( self.loudspeakerPos_xyz_rel2lis[:,0], self.loudspeakerPos_xyz_rel2lis[:,1], self.loudspeakerPos_xyz_rel2lis[:,2] )
                     self.radius = self.loudspeakerPos_rel2lis[:,2]
                     if self.useDelayCompensation:
                         # Delays that 'push' closer speakers acoustically back to the radius of the further speaker
@@ -285,18 +285,18 @@ class HOSLoudspeakerDecoderController( visr.AtomicComponent ):
         
         # Output the decoder coefficients 
         coeffOut = np.array(self.coeffOutputProtocol.data(), copy=False)
-        coeffOut[:] = self.decoder.T
-        self.coeffOutputProtocol.swapBuffers()
+        coeffOut[:] = self.decoder
+        
+        print(self.decoder)
         
         # Output compensation coefficients
         if self.useDelayCompensation: 
              delayOut = np.array( self.delayOutputProtocol.data(), copy = False )
              delayOut[:] = self.delays
-             self.delayOutputProtocol.swapBuffers()
+             # self.delayOutputProtocol.swapBuffers()
         if self.useGainCompensation:
              gainOut = np.array( self.gainOutputProtocol.data(), copy = False )
              gainOut[:] = self.gains
-             self.gainOutputProtocol.swapBuffers()
              
         
             

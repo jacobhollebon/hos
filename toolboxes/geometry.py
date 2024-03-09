@@ -55,7 +55,7 @@ def cart2sph(x,y,z):
     radius = np.sqrt( x*x + y*y + z*z )
     az = np.arctan2( y, x )
     el = np.arcsin( z / radius )
-    sph = np.stack( (az, el, radius) )
+    sph = np.stack( (az, el, radius), axis=-1)
     return sph
 
 def sph2cart( sph ):

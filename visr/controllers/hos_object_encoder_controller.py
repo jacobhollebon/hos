@@ -229,12 +229,10 @@ class HOSObjectEncoderController( visr.AtomicComponent ):
             self.HOSAngles = hos.calculateHOSAngle(self.objectPos_xyz, self.hhat) # Source angles w.r.t interaural axis
             srcEncoder = hos.calculateHOSPlant(self.HOSAngles, self.HOSOrder, HOSType=self.HOSType) # encoder
             self.srcEncoder = srcEncoder * self.levels[np.newaxis,:]
-            
-        
+    
         # Output the encoding coefficients 
         coeffOut = np.array(self.coeffOutputProtocol.data(), copy=False)
-        coeffOut[:] = self.srcEncoder.T
-        self.coeffOutputProtocol.swapBuffers()
+        coeffOut[:] = self.srcEncoder
         
         
     
