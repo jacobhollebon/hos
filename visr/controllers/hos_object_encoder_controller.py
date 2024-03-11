@@ -23,10 +23,10 @@
 
 
 # We kindly ask to acknowledge the use of this software in publications or software.
-# Paper citation: 
+# Paper citation:
 # Jacob Hollebon and Filippo Maria Fazi,
-# “Higher-order stereophony” 
-# IEEE/ACM Transactions on Audio, Speech, and Language Processing, 
+# “Higher-order stereophony”
+# IEEE/ACM Transactions on Audio, Speech, and Language Processing,
 # vol. 31, pp. 2872–2885, 2023
 # doi: 10.1109/TASLP.2023.3297953.
 
@@ -49,19 +49,19 @@ class HOSObjectEncoderController( visr.AtomicComponent ):
     """
     Component to calculate the encoding coefficients for a number of plane wave
     objects into HOS format (analogous to HOA B Format)
-    
+
     Optional 3DOF headtracking to perform Dynamic HOS
     The headtracking may be reduced to 1DOF (yaw only) by an optional command
     e.g useful for horizontal loudspeaker rendering
     """
     def __init__( self,
                   context, name, parent,    # Standard visr component constructor arguments
-                  numberOfObjects,          # The number of plane wave objects rendered.                
+                  numberOfObjects,          # The number of plane wave objects rendered.
                   objectPos = None,         # Initial positions of the objects
                   HOSOrder = 0,             # Order of the HOS encoding
                   HOSType = 'Sine' ,        # What type of HOS encoding
                   useOrientationTracking = False,  # Whether head tracking data is provided via a self.headOrientation port.
-                  useYawOnly = True, 
+                  useYawOnly = True,
                   initialOrientation = None):
         """
         Constructor.
@@ -79,18 +79,18 @@ class HOSObjectEncoderController( visr.AtomicComponent ):
             This must be supplied to initialise signal flow sizes before runtime
             If a larger number is supplied via a scene decoder an error will be raised
         objectPos: array-like, size (numberOfObjects, 2)
-            Starting positions of the objects. 
+            Starting positions of the objects.
             Second dimension containing (azimuth, elevation) of the sources in rads
         HOSOrder: int
             Order of the HOS encoding
         HOSType: string
-           Type of HOS Representation, either 'Sine' (y axis reconstruction) or 'Cosine' (x axis reconstruction). 
+           Type of HOS Representation, either 'Sine' (y axis reconstruction) or 'Cosine' (x axis reconstruction).
            Ensures angles are correctly identified depending on which axis the reproduction is along.
         useOrientationTracking: bool
             Whether the orientation is updated at runtime. If True, a parmater input
             "tracking" is instantiated that receivers pml.ListenerPositions
         initialOrientation: array-like (length 3) or NoneType
-            The initial head rotation or the static head orientation if dynamic updates are deactivated. 
+            The initial head rotation or the static head orientation if dynamic updates are deactivated.
             Given as yaw, pitch, roll in radians
             If None supplied, listener assumed to be facing forwards
         useYawOnly: bool
@@ -99,9 +99,9 @@ class HOSObjectEncoderController( visr.AtomicComponent ):
         """
         # Call base class (AtomicComponent) constructor
         super( HOSObjectEncoderController, self ).__init__( context, name, parent )
-        
-        
-        self.numberOfObjects = numberOfObjects 
+
+
+        self.numberOfObjects = numberOfObjects
         self.numHOSCoeffs = (HOSOrder+1)
         self.HOSOrder        = HOSOrder
         self.HOSType         = HOSType
@@ -128,17 +128,17 @@ class HOSObjectEncoderController( visr.AtomicComponent ):
             self.listenerInputProtocol = self.listenerInput.protocolInput()
         else:
             self.listenerInputProtocol = None
-            
-            
+
+
         # Perform one process loop offline to create initial coefficients
         if initialOrientation is None:
             initialOrientation = np.zeros( (3), np.float32 )
         else:
-            initialOrientation = np.asarray( initialOrientation, dtype = np.float32 ) 
+            initialOrientation = np.asarray( initialOrientation, dtype = np.float32 )
         if initialOrientation.shape[0] != 3:
             raise ValueError(f'Invalid initialOrientation, should be size 3 [y,p,r], supplied {initialOrientation}')
-        
-        
+
+
         # Encoding setup
         # objectPos is size numObjects x 2 (azi and ele)
         if objectPos is None:
@@ -154,46 +154,46 @@ class HOSObjectEncoderController( visr.AtomicComponent ):
             xyz = np.asarray( sph2cart( sph ))
             xyzNormed = 1.0/np.sqrt(np.sum(np.square(xyz))) * xyz
             self.objectPos_xyz[indx,:] = xyzNormed
-        
+
         # Calculate hhat, vector pointing in direction of listener look / x axis in listenter frame
         if self.useYawOnly:  # yaw only orientation handling
             initialOrientation[1:] = 0
         self.hhat = applyRotation( [1,0,0], initialOrientation ) # listener orientation axis
-        
+
         # Calculate Plant Matrix (encoding coefficents for each source from each given direction)
         self.HOSAngles = hos.calculateHOSAngle(self.objectPos_xyz, self.hhat) # Source angles w.r.t listener frame
         srcEncoder = hos.calculateHOSPlant(self.HOSAngles, self.HOSOrder, HOSType=self.HOSType) # encoder
-        
+
         # Initiate unitary volume at start up
         self.levels = np.ones( self.numberOfObjects, dtype = np.float32 )
         self.srcEncoder = srcEncoder * self.levels[np.newaxis,:]
-        
+
     def process( self ):
         """
         Processing function, called from the runtime system in every iteration of the signal flow.
         """
-        
+
         recalculateFlag = False
-        
+
         # If orientation data recieved calculate new hhat
         if (self.listenerInputProtocol is not None ) and self.listenerInputProtocol.changed():
             listener = self.listenerInputProtocol.data()
-            ypr = np.array(listener.orientation, dtype = np.float32 ) # Euler angles YPR orientation
-            
+            ypr = np.array(listener.orientationYPR, dtype = np.float32 ) # Euler angles YPR orientation
+
             # Calculate hhat, vector pointing in direction of listener look / x axis in listenter frame
             if self.useYawOnly:  # yaw only orientation handling
                 ypr[1:] = 0
             self.hhat = applyRotation( [1,0,0], ypr ) # listener orientation axis
-            
+
             recalculateFlag = True
             self.listenerInputProtocol.resetChanged()
-            
+
         # If new object vector recieved, recalculate the source positions
         if self.objectInputProtocol.changed():
             ov = self.objectInputProtocol.data();
             objIndicesRaw = [x.objectId for x in ov
                           if isinstance( x, (om.PointSource, om.PlaneWave) ) ]
-        
+
             self.levels = np.zeros( self.numberOfObjects, dtype = np.float32 )
             sphPos = np.zeros( (self.numberOfObjects,3), dtype = np.float32 )
             sphPos[:,2] = 1 # Set unused sources to a valid direction. (az=0, el=0, r=1)
@@ -214,7 +214,7 @@ class HOSObjectEncoderController( visr.AtomicComponent ):
                     xyz = np.asarray( sph2cart( sph ))
                     xyzNormed = 1.0/np.sqrt(np.sum(np.square(xyz))) * xyz
                     self.objectPos_xyz[index,:] = xyzNormed
-                
+
                     ch = src.channels[0]
                     self.levels[ch]   = src.level
                 else:
@@ -223,19 +223,13 @@ class HOSObjectEncoderController( visr.AtomicComponent ):
                     break
             recalculateFlag = True
             self.objectInputProtocol.resetChanged()
-            
+
         if recalculateFlag:
             # Calculate Plant Matrix (encoding coefficents for each source from each given direction)
             self.HOSAngles = hos.calculateHOSAngle(self.objectPos_xyz, self.hhat) # Source angles w.r.t interaural axis
             srcEncoder = hos.calculateHOSPlant(self.HOSAngles, self.HOSOrder, HOSType=self.HOSType) # encoder
             self.srcEncoder = srcEncoder * self.levels[np.newaxis,:]
-    
-        # Output the encoding coefficients 
+
+        # Output the encoding coefficients
         coeffOut = np.array(self.coeffOutputProtocol.data(), copy=False)
         coeffOut[:] = self.srcEncoder
-        
-        
-    
-        
-             
-        
