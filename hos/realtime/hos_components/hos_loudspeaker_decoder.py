@@ -37,7 +37,7 @@
 
 import numpy as np
 import visr, rbbl, pml, rcl
-from hos_loudspeaker_decoder_controller import HOSLoudspeakerDecoderController
+from hos.realtime import HOSLoudspeakerDecoderController
  
 
 class HOSLoudspeakerDecoder( visr.CompositeComponent ):

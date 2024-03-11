@@ -38,20 +38,20 @@
 import numpy as np
 
 import visr
-import rcl
-import pml
 
-from hos_object_encoder import HOSObjectEncoder
-from hos_loudspeaker_decoder import HOSLoudspeakerDecoder
+from hos.realtime import ObjectToHOSLoudspeakerRenderer
 
 
-class ObjectToHOSLoudspeakerRenderer(visr.CompositeComponent ):
+class RealtimeObjectToHOSLoudspeakerRenderer(visr.CompositeComponent ):
     """
+    Wrapper of the ObjectToHOSLoudspeakerRenderer to include handling of an optional headtracker module
+    
     Renderer to encode a set of audio objects into HOS format then decodes to obtain HOS loudspeaker signals 
     
     Compensation for listener rotations (encoder and decoder) and/or translations (decoder only) is optionally included 
     
     Dynamic delay and/or gain calibration of the loudspeaker array is optionally included to ensure the array is acoustically equidistant
+    
     """
     def __init__( self,
                  context, name, parent,
@@ -69,6 +69,9 @@ class ObjectToHOSLoudspeakerRenderer(visr.CompositeComponent ):
                  beta = None,   
                  useDelayCompensation = False,
                  useGainCompensation = False,
+                 headTracker = None,
+                 headTrackerPositionalArguments = None,
+                 headTrackerKeywordArguments = None,
                  ):
         """
         Constructor.
@@ -126,14 +129,21 @@ class ObjectToHOSLoudspeakerRenderer(visr.CompositeComponent ):
             listener cartesian position.
             Note the gains are normalised such the furthest loudspeaker has a gain of 1
             and all other gains are attenuations (no amplification)
+        headTracker: class
+            Class of a VISR headtracker
+            Some headtrackers only support orientation, others also support positional tracking
+            Make sure the useOrientationTracking and usePositionTracking arguments align with the requested headTracker
+        headTrackerPositionalArguments: dict
+            Dictionairy of positional arguments to initate the supplied VISR headTracker class with
+        headTrackerKeywordArguments: dict
+            Dictionairy of keyword arguments to initate the supplied VISR headTracker class with
         """
-
-        super( ObjectToHOSLoudspeakerRenderer, self ).__init__( context, name, parent )
-
+        
+        super( RealtimeObjectToHOSLoudspeakerRenderer, self ).__init__( context, name, parent )
+        
         numLoudspeakers = loudspeakerPos.shape[0]
         self.objectSignalInput = visr.AudioInputFloat( "audioIn", self, numObjects )
         self.loudspeakerOutput = visr.AudioOutputFloat( "audioOut", self, numLoudspeakers )
-
 
         
         # Check the HOS representation type
@@ -141,84 +151,53 @@ class ObjectToHOSLoudspeakerRenderer(visr.CompositeComponent ):
             raise ValueError(f'Invalid type of HOS representation requested. Must be sine or cosine, supplied {HOSType}')
             
             
-
-        # Encode the objects to HOS Format
-        self.HOSObjectEncoder = HOSObjectEncoder( context, "HOSObjectEncoder", self,
-                                                    numObjects = numObjects,
-                                                    objectPos = objectPos,
-                                                    HOSOrder = HOSOrder,                 
-                                                    HOSType = HOSType,
-                                                    interpolationSteps = None,
-                                                    headOrientation = headOrientation,
-                                                    useOrientationTracking = useOrientationTracking,
-                                                    useYawOnly = useYawOnly
-                                                    )
-        # Set up the object metadata port or receiver and patch it to the object encoder
-        if sceneReceiveUdpPort is None:
-            print('Scene metadata port opened')            
-            self.objectMetadata = visr.ParameterInput("objects", self,
-                                   protocolType=pml.DoubleBufferingProtocol.staticType,
-                                   parameterType=pml.ObjectVector.staticType,
-                                   parameterConfig=pml.EmptyParameterConfig() )
-            self.parameterConnection( self.objectMetadata,
-                                 self.HOSObjectEncoder.parameterPort("objectVector"))
-        else:
-            print('Scene decoder activated')
-            self.sceneReceiver = rcl.UdpReceiver( context, "SceneReceiver", self,
-                                                 port = int(sceneReceiveUdpPort) )
-            self.sceneDecoder = rcl.SceneDecoder( context, "SceneDecoder", self )
-            self.parameterConnection( self.sceneReceiver.parameterPort("messageOutput"),
-                                 self.sceneDecoder.parameterPort("datagramInput") )
-            self.parameterConnection( self.sceneDecoder.parameterPort( "objectVectorOutput"),
-                                 self.HOSObjectEncoder.parameterPort("objectVector"))
-               
-
-
-        # Decode the HOS format to loudspeaker signals, using Dynamic (head-tracked) HOS panning
-        self.HOSLoudspeakerDecoder = HOSLoudspeakerDecoder( context, "HOSLoudspeakerDecoder", self,
-                                                              loudspeakerPos,           
-                                                              HOSOrder = HOSOrder,        
-                                                              HOSType = HOSType,
-                                                              beta = beta,
-                                                              interpolationSteps = None,
-                                                              headOrientation = headOrientation,
-                                                              headPosition = headPosition,
-                                                              useOrientationTracking = useOrientationTracking,
-                                                              usePositionTracking = usePositionTracking,
-                                                              useYawOnly = useYawOnly, 
-                                                              useDelayCompensation = useDelayCompensation,
-                                                              useGainCompensation = useGainCompensation,
-                                                              )
+        # The object to HOS speaker renderer
+        self.HOSrenderer = ObjectToHOSLoudspeakerRenderer( context, "ObjectToHOSLoudspeakerRenderer", self,
+                                                          loudspeakerPos = loudspeakerPos,     
+                                                          numObjects = numObjects,
+                                                          objectPos = objectPos,    
+                                                          sceneReceiveUdpPort = sceneReceiveUdpPort,  
+                                                          HOSOrder = HOSOrder,
+                                                          HOSType = HOSType,     
+                                                          headOrientation = headOrientation,
+                                                          headPosition = headPosition,
+                                                          useOrientationTracking = useOrientationTracking,
+                                                          usePositionTracking = usePositionTracking,
+                                                          useYawOnly = useYawOnly, 
+                                                          beta = beta,   
+                                                          useDelayCompensation = useDelayCompensation,
+                                                          useGainCompensation = useGainCompensation,
+                                                          )
         
-        # Orientation and position tracking ports
+        # Setup headtracker
         if useOrientationTracking or usePositionTracking:
-            self.trackingInput = visr.ParameterInput( "tracking", self, pml.ListenerPosition.staticType,
-                                          pml.DoubleBufferingProtocol.staticType,
-                                          pml.EmptyParameterConfig() )
-        if useOrientationTracking:
-            self.parameterConnection( self.trackingInput, self.HOSObjectEncoder.parameterPort("tracking"))
-            self.parameterConnection( self.trackingInput, self.HOSLoudspeakerDecoder.parameterPort("tracking"))
-        elif (not useOrientationTracking) and usePositionTracking:
-            self.parameterConnection( self.trackingInput, self.HOSLoudspeakerDecoder.parameterPort("tracking"))
-       
-            
+            if headTracker is None:
+                raise ValueError('You have requested listener tracking but not supplied the headtracker setup!')
+            else:
+                if headTrackerPositionalArguments == None:
+                    headTrackerPositionalArguments = ()
+                if headTrackerKeywordArguments == None:
+                    headTrackerKeywordArguments = {}
+                self.trackingDevice = headTracker(context, "HeadTrackingReceiver", self,
+                                                    *headTrackerPositionalArguments,
+                                                    **headTrackerKeywordArguments )
+                
+                self.parameterConnection( self.trackingDevice.parameterPort("orientation"), self.HOSrenderer.parameterPort("tracking"))
+                
         # Audio Connections
-        self.audioConnection( self.objectSignalInput, self.HOSObjectEncoder.audioPort("audioIn")) # Audio input to HOS object Encoder 
-        self.audioConnection( self.HOSObjectEncoder.audioPort("audioOut"), self.HOSLoudspeakerDecoder.audioPort("audioIn")) # HOS format to HOS gain calculator
-        self.audioConnection( self.HOSLoudspeakerDecoder.audioPort("audioOut"), self.loudspeakerOutput) # HOS loudspeaker signals to the audio output
-
-
+        self.audioConnection( self.objectSignalInput, self.HOSrenderer.audioPort("audioIn")) # Object-based audio input to HOS renderer
+        self.audioConnection( self.HOSrenderer.audioPort("audioOut"), self.loudspeakerOutput) # HOS loudspeaker signals to the audio output
 
 
 
 if __name__ == "__main__":
-    import numpy as np
+    from visr_bst.tracker import RazorAHRSWithUdpCalibrationTrigger
+    import serial.tools.list_ports
     
     fs = 48000
     blockSize = 1024
     context = visr.SignalFlowContext(blockSize, fs)
         
-    
     # HOS order
     order = 4
    
@@ -233,22 +212,41 @@ if __name__ == "__main__":
     r  = np.ones(az.shape) # assume radially equidistant loudspeakers
     spkrPos_sph = np.stack([az, el, r], axis=-1)
 
+    # Find the correct port for the headtracker
+    # Print all available usb devices using the below
+    ports = serial.tools.list_ports.comports()
+    availablePorts = []
+    print('Available ports:')
+    for port, desc, hwid in sorted(ports):
+        print("{}: {} [{}]".format(port, desc, hwid))
+        availablePorts.append(port)
+    # change this index to whatever port is desired
+    trackerPort = availablePorts[0]
     
-    renderer = ObjectToHOSLoudspeakerRenderer(context, "HOSRenderer", None,                                               
-                                            loudspeakerPos=spkrPos_sph,     
-                                            numObjects = numSrcs,
-                                            objectPos = srcPos_sph,    
-                                            sceneReceiveUdpPort = 8001,  
-                                            HOSOrder = order,
-                                            HOSType = 'Sine',     
-                                            headOrientation = None,
-                                            headPosition = None,
-                                            useOrientationTracking = False,
-                                            usePositionTracking = False,
-                                            useYawOnly = False, 
-                                            beta = None,   
-                                            useDelayCompensation = False,
-                                            useGainCompensation = False,
-                                            )
+    # Setup headtracker
+    headTracker = RazorAHRSWithUdpCalibrationTrigger
+    headTrackerCalibrationPort = 8889 # any message sent to this UDP port will zero the orientation
+    headTrackerPositionalArguments = None # Use only keyword arguments
+    headTrackerKeywordArguments = {'port': trackerPort, 'calibrationPort': headTrackerCalibrationPort }
+    
+    renderer = RealtimeObjectToHOSLoudspeakerRenderer(context, "HOSRenderer", None,                                               
+                                                    loudspeakerPos=spkrPos_sph,     
+                                                    numObjects = numSrcs,
+                                                    objectPos = srcPos_sph,    
+                                                    sceneReceiveUdpPort = 8001,  
+                                                    HOSOrder = order,
+                                                    HOSType = 'Sine',     
+                                                    headOrientation = None,
+                                                    headPosition = None,
+                                                    useOrientationTracking = True,
+                                                    usePositionTracking = False,
+                                                    useYawOnly = False, 
+                                                    beta = None,   
+                                                    useDelayCompensation = False,
+                                                    useGainCompensation = False,
+                                                    headTracker = headTracker,
+                                                    headTrackerPositionalArguments = headTrackerPositionalArguments,
+                                                    headTrackerKeywordArguments = headTrackerKeywordArguments,
+                                                    )
                     
         

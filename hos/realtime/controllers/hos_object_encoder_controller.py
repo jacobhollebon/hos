@@ -42,8 +42,8 @@ import visr
 import pml
 import objectmodel as om
 
-from geometry import sph2cart, cart2sph, applyRotation
-import hos_functions as hos
+import hos
+from hos.toolboxes.geometry import sph2cart, cart2sph, applyRotation
 
 class HOSObjectEncoderController( visr.AtomicComponent ):
     """

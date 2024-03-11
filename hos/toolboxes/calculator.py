@@ -39,7 +39,7 @@
 
     
 import numpy as np
-import geometry
+import hos.toolboxes.geometry as geometry
 
 def _quadrantMapping( vec, hhat ):
     '''

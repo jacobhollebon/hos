@@ -40,8 +40,8 @@ import numpy as np
 import visr
 import pml
 
-from geometry import sph2cart, cart2sph, applyRotation
-import hos_functions as hos
+import hos
+from hos.toolboxes.geometry import sph2cart, cart2sph, applyRotation
 
 class HOSLoudspeakerDecoderController( visr.AtomicComponent ):
     """
