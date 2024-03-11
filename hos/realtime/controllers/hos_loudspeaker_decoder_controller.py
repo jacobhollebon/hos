@@ -219,9 +219,9 @@ class HOSLoudspeakerDecoderController( visr.AtomicComponent ):
                 self.gains = 1/(4*np.pi*(np.max(self.radius) - self.radius))
             
         # Calculate Plant Matrix (encoding coefficents for each loudspeaker from each given direction)
-        self.HOSAngles = hos.calculateHOSAngle(self.loudspeakerPos_xyz_rel2lis, self.hhat) # Loudspeaker angles w.r.t listener frame
-        plant = hos.calculateHOSPlant(self.HOSAngles, self.HOSOrder, HOSType=self.HOSType) 
-        self.decoder = hos.calculateHOSDecoder( plant, self.HOSOrder, beta=self.beta )
+        self.HOSAngles = hos.calculator.calculateHOSAngle(self.loudspeakerPos_xyz_rel2lis, self.hhat) # Loudspeaker angles w.r.t listener frame
+        plant = hos.calculator.calculateHOSPlant(self.HOSAngles, self.HOSOrder, HOSType=self.HOSType) 
+        self.decoder = hos.calculator.calculateHOSDecoder( plant, self.HOSOrder, beta=self.beta )
         
         # save curr ypr and position
         self.lastYPR = initialOrientation
@@ -279,15 +279,13 @@ class HOSLoudspeakerDecoderController( visr.AtomicComponent ):
       
         if recalculateFlag:
             # Calculate Plant Matrix (encoding coefficents for each loudspeaker from each given direction)
-            self.HOSAngles = hos.calculateHOSAngle(self.loudspeakerPos_xyz_rel2lis, self.hhat) # Loudspeaker angles w.r.t listener frame
-            plant = hos.calculateHOSPlant(self.HOSAngles, self.HOSOrder, HOSType=self.HOSType) 
-            self.decoder = hos.calculateHOSDecoder( plant, self.HOSOrder, beta=self.beta )
+            self.HOSAngles = hos.calculator.calculateHOSAngle(self.loudspeakerPos_xyz_rel2lis, self.hhat) # Loudspeaker angles w.r.t listener frame
+            plant = hos.calculator.calculateHOSPlant(self.HOSAngles, self.HOSOrder, HOSType=self.HOSType) 
+            self.decoder = hos.calculator.calculateHOSDecoder( plant, self.HOSOrder, beta=self.beta )
         
         # Output the decoder coefficients 
         coeffOut = np.array(self.coeffOutputProtocol.data(), copy=False)
         coeffOut[:] = self.decoder
-        
-        print(self.decoder)
         
         # Output compensation coefficients
         if self.useDelayCompensation: 
