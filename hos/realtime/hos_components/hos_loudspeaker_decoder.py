@@ -101,10 +101,12 @@ class HOSLoudspeakerDecoder( visr.CompositeComponent ):
             or the initial position 
         useOrientationTracking: bool
             Whether dynamic head tracking (rotation) is active.
-            Opens up top level parameter port named "orientation" to recieve a pml.ListenerPosition object
+            Opens up top level parameter port named "tracking" to recieve a pml.ListenerPosition object
+            Uses the orientation data from the listener object
         usePositionTracking: bool
             Whether dynamic head tracking (position) is active.
-            Opens up top level parameter port named "position" to recieve a pml.ListenerPosition object
+            Opens up top level parameter port named "tracking" to recieve a pml.ListenerPosition object
+            Uses the positional xyz data from the listener object
         useYawOnly: bool
             If False listener head orientation is tracked w.r.t 3DOF
             If True the pitch and roll of the listener orientation is ignored

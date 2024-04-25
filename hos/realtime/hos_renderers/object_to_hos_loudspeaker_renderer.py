@@ -80,7 +80,7 @@ class ObjectToHOSLoudspeakerRenderer(visr.CompositeComponent ):
             Name of the component, Standard visr.Component construction argument
         parent : visr.CompositeComponent
             Containing component if there is one, None if this is a top-level component of the signal flow.
-        loudspeakerPos: array-like, size (numberOfObjects,2) or numberOfObjects,3) 
+        loudspeakerPos: array-like, size (numberOfLoudspeakers,2) or numberOfLoudspeakers,3) 
             Positions of the loudspeakers in global frame of reference, with the origin at the array center
             Array ordered [az, el, radius] in [rads, rads, m]
             If only angular positions [az, el] are passed, the speakers are assumed to be radially equidistant

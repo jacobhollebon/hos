@@ -90,7 +90,7 @@ class HOSLoudspeakerDecoderController( visr.AtomicComponent ):
             The number of plane wave objects rendered.
             This must be supplied to initialise signal flow sizes before runtime
             If a larger number is supplied via a scene decoder an error will be raised
-        loudspeakerPos: array-like, size (numberOfObjects,3)
+        loudspeakerPos: array-like, size (numberOfLoudspeakers,3)
             Positions of the loudspeakers in global frame of reference, with the origin at the array center
             Array ordered [az, el, radius] in [rads, rads, m]
         HOSOrder: int
