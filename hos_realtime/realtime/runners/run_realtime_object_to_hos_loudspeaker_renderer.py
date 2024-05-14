@@ -43,13 +43,11 @@ import visr
 import rrl
 import audiointerfaces as ai
 
-# from realtime_object_to_hos_loudspeaker_renderer import RealtimeObjectToHOSLoudspeakerRenderer
+from hos_realtime import ObjectToHOSLoudspeakerRenderer, RealtimeObjectToHOSLoudspeakerRenderer
 
-from hos.realtime import ObjectToHOSLoudspeakerRenderer
-
-# from razor_ahrs_with_udp_calibration_trigger_JH import RazorAHRSWithUdpCalibrationTrigger
-# from hdm_tracker_with_udp_calibration_trigger import HdMTrackerWithUdpCalibrationTrigger
-# from vive_tracker import ViveTracker
+from razor_ahrs_with_udp_calibration_trigger_JH import RazorAHRSWithUdpCalibrationTrigger
+from hdm_tracker_with_udp_calibration_trigger import HdMTrackerWithUdpCalibrationTrigger
+from vive_tracker import ViveTracker
 
 #%% General config
 
@@ -60,7 +58,7 @@ context = visr.SignalFlowContext(blockSize, fs)
 HOSOrder = 1 # order of both encoding and decoding
 HOSType = 'Sine' # sine or cosine
 
-sceneReceiveUdpPort = None # None, or UDP port to recieve S3A Scene Metadata
+sceneReceiveUdpPort = 8001 # None, or UDP port to recieve S3A Scene Metadata
 
 whichTracker = 0 # 0: No Tracking, 1: Razor, 2: HdM, 3: Vive
 useYawOnly = True # Use the yaw component of the listener orientation only
@@ -104,6 +102,7 @@ for port, desc, hwid in sorted(ports):
 if whichTracker: # as 0 (False) means no tracking
     
     headTrackerCalibrationPort = 8889 # any message sent to this UDP port will zero the orientation
+    headTrackerPositionalArguments = None
     
     # Razor Tracker
     if whichTracker == 1:
@@ -112,7 +111,7 @@ if whichTracker: # as 0 (False) means no tracking
         trackerPort = "COM4" # Windows, USB
         trackerPort = "/dev/cu.usbserial-AJ03GR8O" # Mac, Razor tracker USB
         
-        headTrackingKeywordArguments = {'port': port, 'calibrationPort': headTrackerCalibrationPort, 
+        headTrackerKeywordArguments = {'port': port, 'calibrationPort': headTrackerCalibrationPort, 
                                         'displayPos': False,
                                         'yawRightHand': True,'pitchRightHand': False,'rollRightHand': False,}
         useOrientationTracking = True
@@ -122,9 +121,9 @@ if whichTracker: # as 0 (False) means no tracking
     elif whichTracker == 2:
         headTracker = HdMTrackerWithUdpCalibrationTrigger
         
-        trackerPort = "/dev/cu.usbmodem1432201" # Mac, HdM tracker USB
+        trackerPort = "/dev/cu.usbmodem14301" # Mac, HdM tracker USB
         
-        headTrackingKeywordArguments = {'port': port, 'calibrationPort': headTrackerCalibrationPort, 
+        headTrackerKeywordArguments = {'port': port, 'calibrationPort': headTrackerCalibrationPort, 
                                         'displayPos': False,
                                         'yawRightHand': True,'pitchRightHand': False,'rollRightHand': False,}
         useOrientationTracking = True
@@ -139,7 +138,7 @@ if whichTracker: # as 0 (False) means no tracking
         useOrientationTracking = True
         usePositionTracking = True
         
-        headTrackingKeywordArguments = {'port': trackerPort, 'positionTracking': usePositionTracking, 
+        headTrackerKeywordArguments = {'port': trackerPort, 'positionTracking': usePositionTracking, 
                                         'displayPos': True }
             
 else:
@@ -159,43 +158,43 @@ if numSpkrs < HOSOrder + 1:
     print(f'Number of Loudspeakers: {numSpkrs}')
     print(f'HOSOrder: {HOSOrder}')
     
-# renderer = RealtimeObjectToHOSLoudspeakerRenderer(context, "HOSRenderer", None,                                               
-#                                                 loudspeakerPos = spkrPos_sph,     
-#                                                 numObjects = numSrcs,
-#                                                 objectPos = srcPos_sph,    
-#                                                 sceneReceiveUdpPort = sceneReceiveUdpPort,  
-#                                                 HOSOrder = HOSOrder,
-#                                                 HOSType = HOSType,     
-#                                                 headOrientation = listenerOrientation,
-#                                                 headPosition = listenerPosition,
-#                                                 useOrientationTracking = useOrientationTracking,
-#                                                 usePositionTracking = usePositionTracking,
-#                                                 useYawOnly = useYawOnly, 
-#                                                 beta = beta,   
-#                                                 useDelayCompensation = useDelayCompensation,
-#                                                 useGainCompensation = useGainCompensation,
-#                                                 headTracker = headTracker,
-#                                                 headTrackerPositionalArguments = headTrackerPositionalArguments,
-#                                                 headTrackerKeywordArguments = headTrackerKeywordArguments,
-#                                                 )
+renderer = RealtimeObjectToHOSLoudspeakerRenderer(context, "HOSRenderer", None,                                               
+                                                loudspeakerPos = spkrPos_sph,     
+                                                numObjects = numSrcs,
+                                                objectPos = srcPos_sph,    
+                                                sceneReceiveUdpPort = sceneReceiveUdpPort,  
+                                                HOSOrder = HOSOrder,
+                                                HOSType = HOSType,     
+                                                headOrientation = listenerOrientation,
+                                                headPosition = listenerPosition,
+                                                useOrientationTracking = useOrientationTracking,
+                                                usePositionTracking = usePositionTracking,
+                                                useYawOnly = useYawOnly, 
+                                                beta = beta,   
+                                                useDelayCompensation = useDelayCompensation,
+                                                useGainCompensation = useGainCompensation,
+                                                headTracker = headTracker,
+                                                headTrackerPositionalArguments = headTrackerPositionalArguments,
+                                                headTrackerKeywordArguments = headTrackerKeywordArguments,
+                                                )
                 
 
-renderer = ObjectToHOSLoudspeakerRenderer( context, "HOSRenderer", None,
-                                                          loudspeakerPos = spkrPos_sph,     
-                                                          numObjects = numSrcs,
-                                                          objectPos = srcPos_sph,    
-                                                          sceneReceiveUdpPort = sceneReceiveUdpPort,  
-                                                          HOSOrder = HOSOrder,
-                                                          HOSType = HOSType,     
-                                                          headOrientation = listenerOrientation,
-                                                          headPosition = listenerPosition,
-                                                          useOrientationTracking = useOrientationTracking,
-                                                          usePositionTracking = usePositionTracking,
-                                                          useYawOnly = useYawOnly, 
-                                                          beta = beta,   
-                                                          useDelayCompensation = useDelayCompensation,
-                                                          useGainCompensation = useGainCompensation,
-                                                          )
+# renderer = ObjectToHOSLoudspeakerRenderer( context, "HOSRenderer", None,
+#                                                           loudspeakerPos = spkrPos_sph,     
+#                                                           numObjects = numSrcs,
+#                                                           objectPos = srcPos_sph,    
+#                                                           sceneReceiveUdpPort = sceneReceiveUdpPort,  
+#                                                           HOSOrder = HOSOrder,
+#                                                           HOSType = HOSType,     
+#                                                           headOrientation = listenerOrientation,
+#                                                           headPosition = listenerPosition,
+#                                                           useOrientationTracking = useOrientationTracking,
+#                                                           usePositionTracking = usePositionTracking,
+#                                                           useYawOnly = useYawOnly, 
+#                                                           beta = beta,   
+#                                                           useDelayCompensation = useDelayCompensation,
+#                                                           useGainCompensation = useGainCompensation,
+#                                                           )
     
 #%% Configure the audio interface
 if platform in ['linux', 'linux2', 'darwin' ]:

@@ -41,7 +41,7 @@ import visr
 import rcl
 import pml
 
-from hos.realtime import HOSObjectEncoder, HOSLoudspeakerDecoder
+from hos_realtime import HOSObjectEncoder, HOSLoudspeakerDecoder
 
 
 class ObjectToHOSLoudspeakerRenderer(visr.CompositeComponent ):

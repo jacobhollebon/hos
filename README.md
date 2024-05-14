@@ -7,6 +7,8 @@ HOS is a generalised extension to classic stereophony, which (in a similar manne
 
 HOS reproduces the soundfield accurately over a line defined by the intramural axis (along which lies the listeners ears). Dynamic HOS extends HOS to adapt this line of reproduction based on real-time head tracking of their listener's position.
 
+Currently, this repository focuses on loudspeaker rendering of objects over HOS/Dynamic HOS. As further work is published this will be extended to include binaural rendering and as well as rendering of Higher-Order Ambisonics using HOS. 
+
 For full details of HOS, please see the work listed in citations.
 
 
@@ -21,17 +23,17 @@ Jacob Hollebon and Filippo Maria Fazi, “Higher-order stereophony,” IEEE/ACM 
 
 ## Folder Structure
 
-### Toolboxes
+### HOS
 
-Core python functions required for HOS calculations
+Core python functions required for HOS calculations, loudspeaker gain definitions, geometry handling and simulations.
 
+### HOS_realtime
 
-### VISR
+Code to perform realtime processing of HOS using the python implementation of the Versatile Interactive Realtime Renderer (VISR) framework.
 
-Code to perform realtime processing using the python implementation of the Versatile Interactive Realtime Renderer (VISR) framework.
+## VISR
 
 VISR is no longer actively supported by the developers, but the source code can be found [here](https://github.com/s3a-spatialaudio/VISR) along with [documentation](https://cvssp.org/data/s3a/public/VISR/visr_installers/0.12.1/macosx/build_py36/doc/userdoc/html/index.html) and a [tutorial](https://github.com/s3a-spatialaudio/visr-tutorial-code). Installers for windows, linux and intel Macs (silicon chips not supported) are available [here](https://cvssp.org/data/s3a/public/VISR/visr_installers/0.12.0/).
-
 
 
 
