@@ -43,7 +43,7 @@ import visr
 import rrl
 import audiointerfaces as ai
 
-from hos_realtime import ObjectToHOSLoudspeakerRenderer, RealtimeObjectToHOSLoudspeakerRenderer
+from hosrealtime import ObjectToHOSLoudspeakerRenderer, RealtimeObjectToHOSLoudspeakerRenderer
 
 from razor_ahrs_with_udp_calibration_trigger_JH import RazorAHRSWithUdpCalibrationTrigger
 from hdm_tracker_with_udp_calibration_trigger import HdMTrackerWithUdpCalibrationTrigger

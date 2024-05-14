@@ -36,7 +36,7 @@
 
     
 import visr, pml, rcl
-from hos_realtime import HOSObjectEncoderController
+from hosrealtime import HOSObjectEncoderController
 
 class HOSObjectEncoder( visr.CompositeComponent ):
     """
@@ -91,9 +91,7 @@ class HOSObjectEncoder( visr.CompositeComponent ):
             Given as yaw, pitch, roll in radians
         useOrientationTracking: bool
             Whether the orientation is updated at runtime. If True, a parmater input
-            "tracking" is instantiated that receives pml.ListenerPositions
-            The orientation data only is used as the HOS encoder assumes
-            plane wave virtual sources
+            "tracking" is instantiated that receivers pml.ListenerPositions
         useYawOnly: bool
             If False listener head orientation is tracked w.r.t 3DOF
             If True the pitch and roll of the listener orientation is ignored

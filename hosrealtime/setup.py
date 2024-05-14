@@ -6,7 +6,7 @@ LONG_DESCRIPTION = 'Higher-Order Stereophony toolbox for realtime rendering of s
 
 # Setting up
 setup(
-        name="hos_realtime", 
+        name="hosrealtime", 
         version=VERSION,
         author="Jacob Hollebon",
         author_email="j.hollebon@soton.ac.uk",
@@ -14,7 +14,7 @@ setup(
         long_description=LONG_DESCRIPTION,
         packages=find_packages(),
         install_requires=[
-             "numpy",
+            "numpy",
             "matplotlib",
             "scipy>=1.7.3",
             "sofar==0.3.1",

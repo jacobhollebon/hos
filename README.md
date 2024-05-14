@@ -23,11 +23,14 @@ Jacob Hollebon and Filippo Maria Fazi, “Higher-order stereophony,” IEEE/ACM 
 
 ## Folder Structure
 
+The repository is split into two separate python packages. The realtime package has the pre-requisite of VISR, see below for more information.
+
+
 ### HOS
 
 Core python functions required for HOS calculations, loudspeaker gain definitions, geometry handling and simulations.
 
-### HOS_realtime
+### HOSrealtime
 
 Code to perform realtime processing of HOS using the python implementation of the Versatile Interactive Realtime Renderer (VISR) framework.
 
@@ -35,5 +38,17 @@ Code to perform realtime processing of HOS using the python implementation of th
 
 VISR is no longer actively supported by the developers, but the source code can be found [here](https://github.com/s3a-spatialaudio/VISR) along with [documentation](https://cvssp.org/data/s3a/public/VISR/visr_installers/0.12.1/macosx/build_py36/doc/userdoc/html/index.html) and a [tutorial](https://github.com/s3a-spatialaudio/visr-tutorial-code). Installers for windows, linux and intel Macs (silicon chips not supported) are available [here](https://cvssp.org/data/s3a/public/VISR/visr_installers/0.12.0/).
 
+
+
+## Installation
+
+You may choose to not instal the HOSrealtime package if you do not have a working VISR install.
+
+* ``git clone https://github.com/jacobhollebon/hos/``
+* ``cd hos``
+* ``pip install .``
+* ``cd ..``
+* ``cd hosrealtime``
+* ``pip install .``
 
 
