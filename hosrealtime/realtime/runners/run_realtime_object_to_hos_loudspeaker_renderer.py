@@ -43,7 +43,7 @@ import visr
 import rrl
 import audiointerfaces as ai
 
-from hosrealtime import ObjectToHOSLoudspeakerRenderer, RealtimeObjectToHOSLoudspeakerRenderer
+from hosrealtime.realtime import RealtimeObjectToHOSLoudspeakerRenderer
 
 from razor_ahrs_with_udp_calibration_trigger_JH import RazorAHRSWithUdpCalibrationTrigger
 from hdm_tracker_with_udp_calibration_trigger import HdMTrackerWithUdpCalibrationTrigger
@@ -178,23 +178,6 @@ renderer = RealtimeObjectToHOSLoudspeakerRenderer(context, "HOSRenderer", None,
                                                 headTrackerKeywordArguments = headTrackerKeywordArguments,
                                                 )
                 
-
-# renderer = ObjectToHOSLoudspeakerRenderer( context, "HOSRenderer", None,
-#                                                           loudspeakerPos = spkrPos_sph,     
-#                                                           numObjects = numSrcs,
-#                                                           objectPos = srcPos_sph,    
-#                                                           sceneReceiveUdpPort = sceneReceiveUdpPort,  
-#                                                           HOSOrder = HOSOrder,
-#                                                           HOSType = HOSType,     
-#                                                           headOrientation = listenerOrientation,
-#                                                           headPosition = listenerPosition,
-#                                                           useOrientationTracking = useOrientationTracking,
-#                                                           usePositionTracking = usePositionTracking,
-#                                                           useYawOnly = useYawOnly, 
-#                                                           beta = beta,   
-#                                                           useDelayCompensation = useDelayCompensation,
-#                                                           useGainCompensation = useGainCompensation,
-#                                                           )
     
 #%% Configure the audio interface
 if platform in ['linux', 'linux2', 'darwin' ]:

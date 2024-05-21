@@ -252,7 +252,7 @@ def calculateHOSDecoder( plant, order, beta=None ):
 if __name__ == "__main__":
     
     import matplotlib.pyplot as plt
-    from geometry import sph2cart, applyRotation
+    from hos.toolboxes.geometry import sph2cart, applyRotation
     
     # Create a set of source positions ranging from -90 to 90 azimuth
     res = 1 # angular res in deg

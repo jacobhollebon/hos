@@ -39,7 +39,7 @@ import numpy as np
 
 import visr
 
-from hosrealtime import ObjectToHOSLoudspeakerRenderer
+from hosrealtime.realtime import ObjectToHOSLoudspeakerRenderer
 
 
 class RealtimeObjectToHOSLoudspeakerRenderer(visr.CompositeComponent ):
