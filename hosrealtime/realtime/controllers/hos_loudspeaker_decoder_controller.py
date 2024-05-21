@@ -142,6 +142,8 @@ class HOSLoudspeakerDecoderController( visr.AtomicComponent ):
         self.HOSType         = HOSType
         self.beta            = beta
         self.useYawOnly      = useYawOnly
+        self.useOrientationTracking = useOrientationTracking
+        self.usePositionTracking = usePositionTracking
         self.useDelayCompensation = useDelayCompensation
         self.useGainCompensation  = useGainCompensation
         self.c = 343 # speed of sound
@@ -168,7 +170,7 @@ class HOSLoudspeakerDecoderController( visr.AtomicComponent ):
             self.gainOutputProtocol = self.gainOutput.protocolOutput()
         
             
-        if useOrientationTracking or usePositionTracking:
+        if self.useOrientationTracking or self.usePositionTracking:
             self.listenerInput = visr.ParameterInput( "tracking", self, pml.ListenerPosition.staticType,
                                                       pml.DoubleBufferingProtocol.staticType,
                                                       pml.EmptyParameterConfig() )
@@ -248,14 +250,14 @@ class HOSLoudspeakerDecoderController( visr.AtomicComponent ):
             # yaw only orientation handling
             if self.useYawOnly:  
                 ypr[1:] = 0
-                    
-            if ypr != self.lastYPR:
+            
+            if not np.allclose(ypr, self.lastYPR):
                 # Calculate hhat, vector pointing in direction of listener look / x axis in listenter frame
                 self.hhat = applyRotation( [1,0,0], ypr ) # listener orientation axis
                 self.lastYPR = ypr
                 recalculateFlag = True
             
-            if pos != self.lastPos:
+            if not np.allclose(pos, self.lastPos):
                 # Spkr positions relative to listener position
                 self.loudspeakerPos_xyz_rel2lis = self.loudspeakerPos_xyz - pos 
                 self.lastPos = pos
