@@ -189,10 +189,16 @@ class HOSLoudspeakerDecoder( visr.CompositeComponent ):
             self.parameterConnection( self.decodingCalculator.parameterPort("delayOutput"),
                                       self.delayCalibration.parameterPort("delayInput") )  
         if useGainCompensation:
-            self.gainCalibration = rcl.GainVector( context, "GainCalibration", None, 
+            # self.gainCalibration = rcl.GainVector( context, "GainCalibration", self, 
+            #                                          numberOfChannels=numLoudspeakers, 
+            #                                          initialGain=1.0, 
+            #                                          controlInputs = True)
+            # as the gain vector object is picky, use a delay vector without any delays...
+            self.gainCalibration = rcl.DelayVector( context, "GainCalibration", self, 
                                                      numberOfChannels=numLoudspeakers, 
-                                                     initialGain=1.0, 
-                                                     controlInputs = True)
+                                                     initialDelay=np.zeros(numLoudspeakers), 
+                                                     initialGain=initialGains, 
+                                                     controlInputs=rcl.DelayVector.ControlPortConfig.Gain)
             self.parameterConnection( self.decodingCalculator.parameterPort("gainOutput"),
                                       self.gainCalibration.parameterPort("gainInput") )  
             
