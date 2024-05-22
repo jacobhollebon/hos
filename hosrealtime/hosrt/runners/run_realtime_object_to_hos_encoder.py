@@ -43,7 +43,7 @@ import visr
 import rrl
 import audiointerfaces as ai
 
-from hosrealtime.realtime import RealtimeObjectToHOSLoudspeakerRenderer
+from hosrealtime.hosrt import RealtimeObjectToHOSEncoder
 
 from razor_ahrs_with_udp_calibration_trigger_JH import RazorAHRSWithUdpCalibrationTrigger
 from hdm_tracker_with_udp_calibration_trigger import HdMTrackerWithUdpCalibrationTrigger
@@ -60,13 +60,9 @@ HOSType = 'Sine' # sine or cosine
 
 sceneReceiveUdpPort = 8001 # None, or UDP port to recieve S3A Scene Metadata
 
-whichTracker = 0 # 0: No Tracking, 1: Razor, 2: HdM, 3: Vive
+whichTracker = 2 # 0: No Tracking, 1: Razor, 2: HdM, 3: Vive
 useYawOnly = True # Use the yaw component of the listener orientation only
 
-
-beta = 0.0001 # Tikhonov regularisation for the decoder   
-useDelayCompensation = True # Adaptive loudspeaker array delay compensation 
-useGainCompensation  = False # Adaptive loudspeaker array gain compensation 
 
 #%% Initial Positions
 
@@ -74,18 +70,8 @@ useGainCompensation  = False # Adaptive loudspeaker array gain compensation
 srcPos_sph = np.deg2rad(np.stack([[90, 0]], axis=-1)).T
 numSrcs = srcPos_sph.shape[0]
     
-# Loudspeakers
-# az = np.deg2rad( np.linspace(-90,90,5) ) # optimal spkr array pos, semicircle in front of listener
-az = np.deg2rad( np.array([-30, 30]) ) # stereo pair
-el = np.zeros(az.shape)
-r  = np.ones(az.shape) # assume radially equidistant loudspeakers
-spkrPos_sph = np.stack([az, el, r], axis=-1)
-numSpkrs = spkrPos_sph.shape[0]
-
 # Listener
 listenerOrientation = np.array([0,0,0]) # ypr in rads
-listenerPosition = np.array([0,0,0]) # xyz in metres
-
 #%% Headtracker
 
 # Find the correct port for the headtracker
@@ -112,7 +98,7 @@ if whichTracker: # as 0 (False) means no tracking
         trackerPort = "/dev/cu.usbserial-AJ03GR8O" # Mac, Razor tracker USB
         
         headTrackerKeywordArguments = {'port': port, 'calibrationPort': headTrackerCalibrationPort, 
-                                        'displayPos': False,
+                                        'displayPos': True,
                                         'yawRightHand': True,'pitchRightHand': False,'rollRightHand': False,}
         useOrientationTracking = True
         usePositionTracking = False
@@ -121,10 +107,10 @@ if whichTracker: # as 0 (False) means no tracking
     elif whichTracker == 2:
         headTracker = HdMTrackerWithUdpCalibrationTrigger
         
-        trackerPort = "/dev/cu.usbmodem14301" # Mac, HdM tracker USB
+        trackerPort = "/dev/cu.usbmodem141201" # Mac, HdM tracker USB
         
         headTrackerKeywordArguments = {'port': port, 'calibrationPort': headTrackerCalibrationPort, 
-                                        'displayPos': False,
+                                        'displayPos': True,
                                         'yawRightHand': True,'pitchRightHand': False,'rollRightHand': False,}
         useOrientationTracking = True
         usePositionTracking = False
@@ -153,26 +139,16 @@ else:
 
 
 #%%
-if numSpkrs < HOSOrder + 1:
-    print('Warning! You can not achieve exact reproduction as you have less loudspeakers than HOSOrder + 1')
-    print(f'Number of Loudspeakers: {numSpkrs}')
-    print(f'HOSOrder: {HOSOrder}')
     
-renderer = RealtimeObjectToHOSLoudspeakerRenderer(context, "HOSRenderer", None,                                               
-                                                loudspeakerPos = spkrPos_sph,     
+renderer = RealtimeObjectToHOSEncoder(context, "HOSEncoder", None,    
                                                 numObjects = numSrcs,
                                                 objectPos = srcPos_sph,    
                                                 sceneReceiveUdpPort = sceneReceiveUdpPort,  
                                                 HOSOrder = HOSOrder,
                                                 HOSType = HOSType,     
                                                 headOrientation = listenerOrientation,
-                                                headPosition = listenerPosition,
                                                 useOrientationTracking = useOrientationTracking,
-                                                usePositionTracking = usePositionTracking,
                                                 useYawOnly = useYawOnly, 
-                                                beta = beta,   
-                                                useDelayCompensation = useDelayCompensation,
-                                                useGainCompensation = useGainCompensation,
                                                 headTracker = headTracker,
                                                 headTrackerPositionalArguments = headTrackerPositionalArguments,
                                                 headTrackerKeywordArguments = headTrackerKeywordArguments,

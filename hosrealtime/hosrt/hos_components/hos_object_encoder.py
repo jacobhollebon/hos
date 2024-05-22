@@ -36,7 +36,7 @@
 
     
 import visr, pml, rcl
-from hosrealtime.realtime import HOSObjectEncoderController
+from hosrealtime.hosrt import HOSObjectEncoderController
 
 class HOSObjectEncoder( visr.CompositeComponent ):
     """
