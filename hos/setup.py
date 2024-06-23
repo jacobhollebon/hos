@@ -17,7 +17,8 @@ setup(
              "numpy",
             "matplotlib",
             "scipy>=1.7.3",
-            "sofar==0.3.1",
+            "sofar>=0.3.1",
+            "spharpy>=0.4.1",
         ], 
         keywords=['python', 'hos', 'higher-order stereophony', 'high order stereophony', 'higher-order stereo', 'high order stereo', 'spatial audio', '3D audio']
 )
