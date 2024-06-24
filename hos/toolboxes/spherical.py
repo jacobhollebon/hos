@@ -312,7 +312,7 @@ def SHT( data_nm, pos, N, kind='realsn3d'):
     return Ynm, data_nm 
             
 
-def sofa2sh( sofaPath, N, kind='realsn3d', beta=1e-8 ):
+def sofa2sh( sofaPath, N=None, kind='realsn3d', beta=1e-8 ):
     '''
     Load a sofa file and perform the iSHT returning the 
     hrir SH coefficients
@@ -322,8 +322,10 @@ def sofa2sh( sofaPath, N, kind='realsn3d', beta=1e-8 ):
     ----------
     sofaPath : str
         File path to the sofa file
-    N : int
+    N : int or None
         Order of the sampling
+        If None, the highest maximum order as per the number of
+        sampling positions in the sofa file will be used
     kind : str, optional
         The type of spherical harmonic, options are
         complex: complex SHs 
@@ -364,9 +366,12 @@ def sofa2sh( sofaPath, N, kind='realsn3d', beta=1e-8 ):
     pos = np.stack([az, el, r], axis=1)
     
     Nmax = int(np.floor(np.sqrt(pos.shape[0])-1))
-    if N > Nmax:
+    if N is None:
+        print(f'No truncation order supplied, using Nmax={Nmax}')
+        N = Nmax
+    elif N > Nmax:
         print('You have requested an order higher than possible with this sampling regime')
-        print('fTruncating to maximum order allowed: {Nmax}')
+        print(f'Truncating to maximum order allowed: {Nmax}')
         N = Nmax
     
     Ynm, YnmInv, hrir_nm = iSHT( hrir, pos, N, kind=kind, beta=beta)
