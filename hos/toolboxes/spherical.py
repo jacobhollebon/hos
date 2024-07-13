@@ -714,4 +714,43 @@ def rotateCoefficients( data_nm, angles, seq='zyx', kind='realsn3d', isDegrees=F
             
     return data_nm_rot
     
+
+def decimateCoefficients( data_nm ):
+    '''
+    Reduce a full set of (N+1)**2 coefficients down to the HOS representation 
+    of just the (N+1) set of m=0 coefficients
+
+    Parameters
+    ----------
+    data_nm : Array-like, shape(N+1)**2, time/freq) or (N+1)**2, ch, time/freq))
+        The spherical harmonic coefficients
+        
+    Returns
+    -------
+    data_n : Array-like, shape(N+1), time/freq) or (N+1), ch, time/freq))
+        The decimated spherical harmonic coefficients.
+
+    '''
     
+    # check the dimensions of the supplied data
+    dims = data_nm.ndim
+    if dims > 3:
+        raise ValueError('Data larger than 3 dimensions is not supported')
+    elif dims < 2:
+        raise ValueError('Data should have at minimum 2 dimensions, coefficients x (time/freq)')
+        
+    N = int(np.sqrt(data_nm.shape[0])-1)
+    
+    D = np.zeros(((N+1), (N+1)**2))
+    for n in range(N+1):
+        acn = n**2 + n # acn formula for m=0 coefficients
+        D[n, acn] = 1 
+    
+    if dims == 2:
+        data_nm_dec = D @ data_nm
+    elif dims == 3:
+        data_nm_dec = np.empty_like(data_nm)
+        for ch in range(data_nm.shape[1]):
+            data_nm_dec[:, ch, :] = D @ data_nm[:, ch, :]
+            
+    return data_nm_dec
