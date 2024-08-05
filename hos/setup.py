@@ -16,8 +16,6 @@ setup(
         install_requires=[
              "numpy",
             "matplotlib",
-            "os",
-            "warnings",
             "scipy>=1.7.3",
             "sofar>=0.3.1",
             "spharpy>=0.4.1",
