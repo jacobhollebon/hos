@@ -40,7 +40,7 @@
 import numpy as np
 import warnings
 import hos.toolboxes.spherical as spherical
-import hos.toolboxes.decoders as decoders
+import hos.decoders as decoders
 
 def hoa2hosDecoder( hoa_nm, kind='realsn3d' ):
     '''
