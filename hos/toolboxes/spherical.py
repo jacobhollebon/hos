@@ -46,6 +46,23 @@ import sofar
 from scipy.signal import group_delay
 from statistics import median
 
+def _getSupportedSHConventions():
+    '''
+    Helper function to return the supported types of
+    spherical harmonics within this toolbox
+    
+    Parameters
+    ----------
+    None
+        
+    Returns
+    -------
+    supportedSHConventions : str
+        List of the supported types of spherical harmonics
+    
+    '''
+    supportedSHConventions = ["complex", "realn3d", "realsn3d"]
+    return supportedSHConventions 
     
 def Nkr( N, r=0.0875, c=343 ):
     '''
@@ -129,7 +146,7 @@ def sphHarm( pos, N, kind='realSN3D', plot=False ):
     
     # check the kind of SH requested
     kind = kind.lower()
-    supportedSHConventions = ["complex", "realn3d", "realsn3d"]
+    supportedSHConventions = _getSupportedSHConventions()
     if kind not in supportedSHConventions:
         raise ValueError(f"Invalid kind: Choose from {supportedSHConventions}")
         
@@ -218,7 +235,7 @@ def iSHT( data, pos, N, kind='realsn3d', beta=1e-15):
     # Safety Checks
     # check the kind of SH requested
     kind = kind.lower()
-    supportedSHConventions = ["complex", "realn3d", "realsn3d"]
+    supportedSHConventions = _getSupportedSHConventions()
     if kind not in supportedSHConventions:
         raise ValueError(f"Invalid kind: Choose from {supportedSHConventions}")
     # check the dimensions of the supplied data
@@ -321,7 +338,7 @@ def iSHTmagls( data, pos, N, kind='realsn3d', beta=1e-15, fmagls=None, fade=None
     # Safety Checks
     # check the kind of SH requested
     kind = kind.lower()
-    supportedSHConventions = ["complex", "realn3d", "realsn3d"]
+    supportedSHConventions = _getSupportedSHConventions()
     if kind not in supportedSHConventions:
         raise ValueError(f"Invalid kind: Choose from {supportedSHConventions}")
     # check the dimensions of the supplied data
@@ -470,7 +487,7 @@ def SHT( data_nm, pos, N, kind='realsn3d'):
     # Safety Checks
     # check the kind of SH requested
     kind = kind.lower()
-    supportedSHConventions = ["complex", "realn3d", "realsn3d"]
+    supportedSHConventions = _getSupportedSHConventions()
     if kind not in supportedSHConventions:
         raise ValueError(f"Invalid kind: Choose from {supportedSHConventions}")
     # check the dimensions of the supplied data
@@ -685,7 +702,7 @@ def rotateCoefficients( data_nm, angles, seq='zyx', kind='realsn3d', isDegrees=F
     # Safety Checks
     # check the kind of SH requested
     kind = kind.lower()
-    supportedSHConventions = ["complex", "realn3d", "realsn3d"]
+    supportedSHConventions = _getSupportedSHConventions()
     if kind not in supportedSHConventions:
         raise ValueError(f"Invalid kind: Choose from {supportedSHConventions}")
     # check the dimensions of the supplied data
