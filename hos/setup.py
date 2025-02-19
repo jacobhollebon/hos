@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.1' 
-DESCRIPTION = 'Higher-Order Stereophony toolbox'
-LONG_DESCRIPTION = 'Higher-Order Stereophony toolbox for simulation of spatial audio'
+VERSION = "0.1"
+DESCRIPTION = "Higher-Order Stereophony toolbox"
+LONG_DESCRIPTION = "Higher-Order Stereophony toolbox for simulation of spatial audio"
 
 # Setting up
 setup(
