@@ -282,7 +282,10 @@ def iSHT(data, pos, N, kind="realsn3d", beta=1e-15):
         raise ValueError(
             "Data should have at minimum 2 dimensions, positions x (time/freq)"
         )
-
+    
+    if beta is None:
+        beta = 0
+    
     # Compute the SH matrix
     Ynm = sphHarm(pos, N, kind=kind)
     numCoeffs = (N + 1) ** 2  # number of SHs
@@ -305,18 +308,17 @@ def iSHT(data, pos, N, kind="realsn3d", beta=1e-15):
     return Ynm, YnmInv, data_nm
 
 
-def iSHTmagls(
-    data,
-    pos,
-    N,
-    kind="realsn3d",
-    beta=1e-15,
-    fmagls=None,
-    fade=None,
-    removeGD=False,
-    fs=48000,
-    NFFT=None,
-):
+def iSHTmagls(data,
+                pos,
+                N,
+                kind="realsn3d",
+                beta=1e-15,
+                fmagls=None,
+                fade=None,
+                removeGD=False,
+                fs=48000,
+                NFFT=None,
+                ):
     """
     Calculate the inverse spherical harmonic transform of a set of data
 
@@ -426,7 +428,10 @@ def iSHTmagls(
             data = np.fft.rfft(data, NFFT, axis=-1)  # back to freq domain with new NFFT
     f = np.linspace(0, fs / 2, (NFFT // 2) + 1)
     f_len = len(f)
-
+    
+    if beta is None:
+        beta = 0
+        
     # Set up mag ls
     if fmagls is None:
         fmagls = Nkr(N)
@@ -627,6 +632,9 @@ def sofa2sh(sofaPath, N=None, kind="realsn3d", beta=1e-15):
     # new sampling position array
     pos = np.stack([az, el, r], axis=1)
 
+    if beta is None:
+        beta = 0
+        
     Nmax = int(np.floor(np.sqrt(pos.shape[0]) - 1))
     if N is None:
         print(f"No truncation order supplied, using Nmax={Nmax}")
@@ -720,6 +728,9 @@ def sofa2shmagls(
     # new sampling position array
     pos = np.stack([az, el, r], axis=1)
 
+    if beta is None:
+        beta = 0
+        
     Nmax = int(np.floor(np.sqrt(pos.shape[0]) - 1))
     if N is None:
         print(f"No truncation order supplied, using Nmax={Nmax}")
