@@ -4,6 +4,7 @@
 [3] J. Hollebon and F. M. Fazi, “Spatial audio panning with elevated sources using horizontal-only reproduction loudspeakers,” in I3DA: International Conference on Immersive and 3D Audio, 2023.
 [4] J. Hollebon and F. M. Fazi, “Dynamic Higher-order stereophony,” IEEE/ACM Transactions on Audio, Speech, and Language Processing, vol. 32, pp. 2073–2084, 2024
 [5] J. Hollebon and F. M. Fazi, “Efficient Rendering Of HOA Using HOS And Magnitude Least Squares,” in AES 5th International Conference on Audio for Virtual and Augmented Reality, 2024.
+[6] J. Hollebon, F. M. Fazi; Binaural rendering using higher-order stereophony. J. Acoust. Soc. Am. 1 February 2025; 157 (2): 1241–1251. https://doi.org/10.1121/10.0035793
 
 # Generalised Low Frequency Spatial Audio:
 [1] J. Hollebon and F. M. Fazi, “Generalised low frequency 3d audio reproduction over loudspeakers,” in AES 148th Convention, 2020.
