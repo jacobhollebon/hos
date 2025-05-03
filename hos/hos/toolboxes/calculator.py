@@ -23,10 +23,10 @@
 
 
 # We kindly ask to acknowledge the use of this software in publications or software.
-# Paper citation: 
+# Paper citation:
 # Jacob Hollebon and Filippo Maria Fazi,
-# “Higher-order stereophony” 
-# IEEE/ACM Transactions on Audio, Speech, and Language Processing, 
+# “Higher-order stereophony”
+# IEEE/ACM Transactions on Audio, Speech, and Language Processing,
 # vol. 31, pp. 2872–2885, 2023
 # doi: 10.1109/TASLP.2023.3297953.
 
@@ -37,13 +37,14 @@
 
 ### Functions for performing core Higher-Order Stereo operations ###
 
-    
+
 import numpy as np
 import hos.toolboxes.geometry as geometry
 
-def _quadrantMapping( vec, hhat ):
-    '''
-    Returns a factor to multiply the HOSAngle by to ensure it is in the correct 
+
+def _quadrantMapping(vec, hhat):
+    """
+    Returns a factor to multiply the HOSAngle by to ensure it is in the correct
     quadrant, as the great-circle distance/dot product only gives the angle between
     vectors not the relative direction
 
@@ -54,41 +55,42 @@ def _quadrantMapping( vec, hhat ):
     hhat : Array-like, shape (3)
         Unit norm cartesian vector pointing in the look direction of
         the listeners head (listener orientation)
-        
+
     Returns
     -------
     factor : int
         1 or -1 depending on the quadrant.
 
-    '''
+    """
     vec_rot = np.squeeze(geometry.estimateAndApplyRotation(vec, hhat))
 
     sph = geometry.cart2sph(vec_rot[0], vec_rot[1], vec_rot[2])
     # Quadrant of each azimuthal position as int 0,1,2,3 going clockwise w.r.t azimuth
-    aziQuad = int(np.floor((np.round(sph[0],10) % (2*np.pi))/(np.pi/2)))
-    
-    if aziQuad in [0,1]:
+    aziQuad = int(np.floor((np.round(sph[0], 10) % (2 * np.pi)) / (np.pi / 2)))
+
+    if aziQuad in [0, 1]:
         factor = 1
-    elif aziQuad in [2,3]:
+    elif aziQuad in [2, 3]:
         factor = -1
     else:
-        raise ValueError(f'Something went wrong calculating aziQuad, returned value: {aziQuad}')
+        raise ValueError(
+            f"Something went wrong calculating aziQuad, returned value: {aziQuad}"
+        )
     return factor
 
-    
-    
-def calculateHOSAngle( xyz, hhat=np.array([1,0,0]) ):
-    '''
-    Calculates the HOS angle 
+
+def calculateHOSAngle(xyz, hhat=np.array([1, 0, 0])):
+    """
+    Calculates the HOS angle
     This is the angle between a source at position xyz and the x axis in the listeners rotated
     frame of reference defined by hhat
-    
+
     The HOSAngle maps any given source position to a cone of confusion of possible source positions
     which for a plane wave source all create the same soundfield across the interaural axis
-    
+
     This means only one angle is required to define the source position and in any HOS encoding/decoding
-    
-    Equivalently the HOSAngle may be considered as the horizontal only source position which maps an 
+
+    Equivalently the HOSAngle may be considered as the horizontal only source position which maps an
     elevated position through the cone of confusion
 
     Parameters
@@ -104,44 +106,50 @@ def calculateHOSAngle( xyz, hhat=np.array([1,0,0]) ):
     -------
     angle : Array-like, shape (L)
         HOS angle defining the source positons w.r.t the listeners frame of reference
-    '''
-    
-    
+    """
+
     xyz = np.asarray(xyz)
     if xyz.shape[-1] != 3:
-        raise ValueError('You must supply all three cartesian coordinates to variable xyz')
+        raise ValueError(
+            "You must supply all three cartesian coordinates to variable xyz"
+        )
     if xyz.ndim == 1:
-        xyz = xyz[np.newaxis,:]
-    
+        xyz = xyz[np.newaxis, :]
+
     hhat = np.asarray(hhat)
     if hhat.shape[-1] != 3:
-        raise ValueError('You must supply all three cartesian coordinates to variable hhat')
+        raise ValueError(
+            "You must supply all three cartesian coordinates to variable hhat"
+        )
     if hhat.ndim != 1:
         hhat = np.squeeze(hhat)
     if hhat.shape[0] != 3:
-        raise ValueError(f'hhat must be single dimension length 3, you have supplied shape {hhat.shape}')
-        
-    hhat = hhat / np.linalg.norm(hhat) # In case nhat wasnt normed already
-    
+        raise ValueError(
+            f"hhat must be single dimension length 3, you have supplied shape {hhat.shape}"
+        )
+
+    hhat = hhat / np.linalg.norm(hhat)  # In case nhat wasnt normed already
+
     angle = np.zeros(xyz.shape[0])
     for idx in range(xyz.shape[0]):
-        vec = xyz[idx,:]
+        vec = xyz[idx, :]
         vec = vec / np.linalg.norm(vec)
-        # Get the correct quadrant 
-        factor = _quadrantMapping( vec, hhat )
-        angle[idx] = factor * abs(np.arccos( np.dot(vec, hhat) ))
-        
+        # Get the correct quadrant
+        factor = _quadrantMapping(vec, hhat)
+        angle[idx] = factor * abs(np.arccos(np.dot(vec, hhat)))
+
     return angle
 
-def calculateHOSPlant( HOSAngles, order, orderMatrix=None, HOSType='sine'):
-    '''
+
+def calculateHOSPlant(HOSAngles, order, orderMatrix=None, HOSType="sine"):
+    """
     This funciton calculates a HOS plant matrix
     This is matrix of encoding coefficients to transform a set of coordinates
     into HOS format
-    
-    It may be used to create encoding coefficients which are need to transform a 
+
+    It may be used to create encoding coefficients which are need to transform a
     set of L plane wave objects positioned at HOSAngles into a HOS format stream
-    
+
     It may also be used to encode a plant matrix of N loudspeaker positions to then
     be inverted for use in a HOS loudspeaker decoder to transform HOS format to
     loudspeaker signals
@@ -159,11 +167,11 @@ def calculateHOSPlant( HOSAngles, order, orderMatrix=None, HOSType='sine'):
         Array of encoding order coefficients
         The ith and jth element is equal to i
     HOSType : str
-        Optional, the encoding type for the HOS format which changes which axis 
+        Optional, the encoding type for the HOS format which changes which axis
         the soundfield reproduction occurs over
         If sine then the interaural axis is assumed to be along the y axis
         If cosine then the interaural axis is assumed to be along the x axis
-        Note if HOSAngle has been calculated using a listener rotation compensated 
+        Note if HOSAngle has been calculated using a listener rotation compensated
         interaural axis then the HOSType MUST be sine
     Returns
     -------
@@ -171,49 +179,52 @@ def calculateHOSPlant( HOSAngles, order, orderMatrix=None, HOSType='sine'):
         Plant matrix of HOSAngles calculated for all orders of up to order+1
         for L objects
 
-    '''
-    
+    """
+
     HOSAngles = np.asarray(HOSAngles)
     if HOSAngles.ndim != 1:
-        raise ValueError('HOSAngle should be 1D array')
-        
+        raise ValueError("HOSAngle should be 1D array")
+
     if order < 0:
-        raise ValueError('Order must be positive')
+        raise ValueError("Order must be positive")
     order = int(order)
-    
+
     # Check the HOS representation type
-    if HOSType.lower() not in ['sine', 'sin', 'cosine', 'cos']:
-        raise ValueError(f'Invalid type of HOS representation requested. Must be sine or cosine, supplied {HOSType}')
-    
+    if HOSType.lower() not in ["sine", "sin", "cosine", "cos"]:
+        raise ValueError(
+            f"Invalid type of HOS representation requested. Must be sine or cosine, supplied {HOSType}"
+        )
+
     numObjects = HOSAngles.shape[0]
-    numCoeffs  = order+1
-    
+    numCoeffs = order + 1
+
     # Create matrix of size HOSOrder+1 x num object positions
-    HOSAnglesMatrix = np.tile(HOSAngles,(order+1,1))    
-    
+    HOSAnglesMatrix = np.tile(HOSAngles, (order + 1, 1))
+
     # orderMatrix may be supplied to speed up calculation
     if orderMatrix is None:
-        orderMatrix = np.tile(np.arange(0,order+1,1),(numObjects,1)).T      # Create matrix of powers
-    
-    # Create encoding matrix
-    if HOSType.lower() in ['sine', 'sin']:
-        plant = np.sin(HOSAnglesMatrix)**orderMatrix     
-    elif HOSType.lower() in ['cosine', 'cos']:
-        plant = np.cos(HOSAnglesMatrix)**orderMatrix           
-    
-    return plant
-        
-    
+        orderMatrix = np.tile(
+            np.arange(0, order + 1, 1), (numObjects, 1)
+        ).T  # Create matrix of powers
 
-def calculateHOSDecoder( plant, order, beta=None ):
-    '''
+    # Create encoding matrix
+    if HOSType.lower() in ["sine", "sin"]:
+        plant = np.sin(HOSAnglesMatrix) ** orderMatrix
+    elif HOSType.lower() in ["cosine", "cos"]:
+        plant = np.cos(HOSAnglesMatrix) ** orderMatrix
+
+    return plant
+
+
+def calculateHOSDecoder(plant, order, beta=None):
+    """
     Calculates a HOS decoding matrix by performing a pseudoinversion of a HOS plant
-    
+
     Optional regularisation may be included in the inversion
-    
+
     Can be used to invert a plant matrix of loudspeaker positions. Applying the inverted plant
     to a HOS format audio stream will create a set of loudspeaker signals
-    
+
 
     Parameters
     ----------
@@ -231,113 +242,111 @@ def calculateHOSDecoder( plant, order, beta=None ):
     plantInv : Array-like, shape(L, order+1)
         Pseudoinvese of the plant matrix
 
-    '''
-    
+    """
+
     numObjects = plant.shape[1]
-    numCoeffs  = order+1
+    numCoeffs = order + 1
     if plant.shape[0] != numCoeffs:
-        raise ValueError(f'The supplied plant matrix is of order: {plant.shape[1]-1} which doesnt match the supplied order: {order}')
-    
-    plantH = plant.conj().T # hermitian transpose
+        raise ValueError(
+            f"The supplied plant matrix is of order: {plant.shape[1]-1} which doesnt match the supplied order: {order}"
+        )
+
+    plantH = plant.conj().T  # hermitian transpose
     if beta is None:
-        gram = np.linalg.inv( plant @ plantH ) # no regularisation
-    else: 
+        gram = np.linalg.inv(plant @ plantH)  # no regularisation
+    else:
         betaMatrix = beta * np.identity(numCoeffs)
-        gram = np.linalg.inv( (plant @ plantH) + betaMatrix ) # tikhonov regularisation
+        gram = np.linalg.inv((plant @ plantH) + betaMatrix)  # tikhonov regularisation
     plantInv = plantH @ gram
-    
+
     return plantInv
-        
+
 
 if __name__ == "__main__":
-    
     import matplotlib.pyplot as plt
     from hos.toolboxes.geometry import sph2cart, applyRotation
-    
+
     # Create a set of source positions ranging from -90 to 90 azimuth
-    res = 1 # angular res in deg
-    az = np.deg2rad( np.arange(-90,90,res) )
+    res = 1  # angular res in deg
+    az = np.deg2rad(np.arange(-90, 90, res))
     el = np.zeros(az.shape)
-    r  = np.ones(az.shape)
+    r = np.ones(az.shape)
     srcPos_sph = np.stack([az, el, r], axis=-1)
-    srcPos_xyz = np.asarray( sph2cart( srcPos_sph ))
+    srcPos_xyz = np.asarray(sph2cart(srcPos_sph))
     numSrcs = srcPos_xyz.shape[0]
 
     # listener orientation axis
-    hhat = np.array([1,0,0]) # listener head orientation
+    hhat = np.array([1, 0, 0])  # listener head orientation
     # ypr = [np.pi/4, 0, 0]
-    ypr = [0,0,0]
-    hhat = applyRotation( hhat, ypr )
+    ypr = [0, 0, 0]
+    hhat = applyRotation(hhat, ypr)
 
     # HOS order
     order = 4
 
     # Loudspeaker Positions
-    numSpkrs = order+1 # miniumum required
-    az = np.deg2rad( np.linspace(-90,90,numSpkrs) ) # optimal spkr array pos, semicircle in front of listener
+    numSpkrs = order + 1  # miniumum required
+    az = np.deg2rad(
+        np.linspace(-90, 90, numSpkrs)
+    )  # optimal spkr array pos, semicircle in front of listener
     el = np.zeros(az.shape)
-    r  = np.ones(az.shape) # assume radially equidistant loudspeakers
+    r = np.ones(az.shape)  # assume radially equidistant loudspeakers
     spkrPos_sph = np.stack([az, el, r], axis=-1)
-    spkrPos_xyz = np.asarray( sph2cart( spkrPos_sph ))
-
+    spkrPos_xyz = np.asarray(sph2cart(spkrPos_sph))
 
     # Source angles w.r.t interaural axis
     HOSAngles_src = calculateHOSAngle(srcPos_xyz, hhat)
     # Plant Matrix (encoding coefficents for each source from each given direction)
-    srcEncoder = calculateHOSPlant(HOSAngles_src, order, HOSType='sine')
+    srcEncoder = calculateHOSPlant(HOSAngles_src, order, HOSType="sine")
 
     # Spkr angles w.r.t interaural axis
     HOSAngles_spkrs = calculateHOSAngle(spkrPos_xyz, hhat)
     # Plant Matrix (coeifficents for spkr position)
-    spkrPlant = calculateHOSPlant(HOSAngles_spkrs, order, HOSType='sine')
+    spkrPlant = calculateHOSPlant(HOSAngles_spkrs, order, HOSType="sine")
     # Decoding matrix for spkr plant
     spkrDecoder = calculateHOSDecoder(spkrPlant, order, beta=0.00001)
 
     # Calculate the actual loudspeaker gains for each source position
     gains = np.zeros((numSpkrs, numSrcs))
     for idx, HOSSignals in enumerate(srcEncoder.T):
-        gains[:,idx] = spkrDecoder @ HOSSignals
-        
-        
-
+        gains[:, idx] = spkrDecoder @ HOSSignals
 
     clip = [-1.2, 1.2]
     fig = plt.figure()
     ax1 = fig.add_subplot(1, 1, 1)
     ax2 = ax1.twiny()
-    ls = ['-', '--', '-.', ':','--']
+    ls = ["-", "--", "-.", ":", "--"]
     for l in range(numSpkrs):
-        label = '$g_{'+str(l+1)+'}$'
-        ax1.plot(np.rad2deg(HOSAngles_src), gains[l,:], ls=ls[l], label=label)
-       
-    ax1.plot(np.rad2deg(HOSAngles_src), np.sum(gains, axis=0), label=r'$\sum_{l=1}^L g_l$')
+        label = "$g_{" + str(l + 1) + "}$"
+        ax1.plot(np.rad2deg(HOSAngles_src), gains[l, :], ls=ls[l], label=label)
 
-    ax2.vlines(np.rad2deg(spkrPos_sph[:,0]), clip[0], clip[1], color='r', ls='--')
+    ax1.plot(
+        np.rad2deg(HOSAngles_src), np.sum(gains, axis=0), label=r"$\sum_{l=1}^L g_l$"
+    )
 
-    ax1.set_ylabel(r'Amplitude')
-    ax1.set_xlabel(r'HOS Angle (Deg)')
-    ax1.grid('on')
+    ax2.vlines(np.rad2deg(spkrPos_sph[:, 0]), clip[0], clip[1], color="r", ls="--")
+
+    ax1.set_ylabel(r"Amplitude")
+    ax1.set_xlabel(r"HOS Angle (Deg)")
+    ax1.grid("on")
     ax1.minorticks_on()
-    ax1.set_ylim(clip[0],clip[1])
-    ax1.set_xlim(-90,90)
-    ax1.set_xticks([-90, -45, 0, 45,90])
-    ax2.set_xticks([-90,-45,0,45,90])
-    ax2.set_xlim(-90,90)
-    ax2.set_xlabel('Azimuth (Deg)')
+    ax1.set_ylim(clip[0], clip[1])
+    ax1.set_xlim(-90, 90)
+    ax1.set_xticks([-90, -45, 0, 45, 90])
+    ax2.set_xticks([-90, -45, 0, 45, 90])
+    ax2.set_xlim(-90, 90)
+    ax2.set_xlabel("Azimuth (Deg)")
 
-    if numSpkrs > 6: # Double column legend for many loudspeakers
-        numcol=2
-    elif numSpkrs > 8: # Double column legend for many loudspeakers
-        numcol=3
-    elif numSpkrs > 10: # Double column legend for many loudspeakers
-        numcol=4
+    if numSpkrs > 6:  # Double column legend for many loudspeakers
+        numcol = 2
+    elif numSpkrs > 8:  # Double column legend for many loudspeakers
+        numcol = 3
+    elif numSpkrs > 10:  # Double column legend for many loudspeakers
+        numcol = 4
     else:
-        numcol=1
-    ax1.legend(loc=4, ncol=numcol, fontsize=16) #Fontsize change in legend to make it smaller
+        numcol = 1
+    ax1.legend(
+        loc=4, ncol=numcol, fontsize=16
+    )  # Fontsize change in legend to make it smaller
     plt.tight_layout()
     plt.show()
-
-
-        
-    
-    

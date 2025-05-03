@@ -23,10 +23,10 @@
 
 
 # We kindly ask to acknowledge the use of this software in publications or software.
-# Paper citation: 
+# Paper citation:
 # Jacob Hollebon and Filippo Maria Fazi,
-# “Higher-order stereophony” 
-# IEEE/ACM Transactions on Audio, Speech, and Language Processing, 
+# “Higher-order stereophony”
+# IEEE/ACM Transactions on Audio, Speech, and Language Processing,
 # vol. 31, pp. 2872–2885, 2023
 # doi: 10.1109/TASLP.2023.3297953.
 
@@ -42,39 +42,42 @@ import math
 import numpy as np
 from scipy.spatial.transform import Rotation as rot
 
+
 # note: the input format is inconsistent with the return value and with sph2cart
 # (individual values vs single matrix)
-def cart2sph(x,y,z):
-    ''' 
+def cart2sph(x, y, z):
+    """
     port from visr geoemtry functions
     visr uses a listener centric coordinate system as per the SOFA conventions
     cart: +x pointing front of listener, +y to the left ear, +z up
     sph: azimuth angle from x axis in x-y plane (0 to 2pi)
          elevation from x-y plane (-pi/2 to pi/2)
-    '''
-    radius = np.sqrt( x*x + y*y + z*z )
-    az = np.arctan2( y, x )
-    el = np.arcsin( z / radius )
-    sph = np.stack( (az, el, radius), axis=-1)
+    """
+    radius = np.sqrt(x * x + y * y + z * z)
+    az = np.arctan2(y, x)
+    el = np.arcsin(z / radius)
+    sph = np.stack((az, el, radius), axis=-1)
     return sph
 
-def sph2cart( sph ):
-    ''' 
+
+def sph2cart(sph):
+    """
     port from visr geoemtry functions
     visr uses a listener centric coordinate system as per the SOFA conventions
     cart: +x pointing front of listener, +y to the left ear, +z up
     sph: azimuth angle from x axis in x-y plane (0 to 2pi)
          elevation from x-y plane (-pi/2 to pi/2)
-    '''
-    elFactor = np.cos( sph[...,1] )
-    x = np.cos( sph[...,0] ) * elFactor * sph[...,2]
-    y = np.sin( sph[...,0] ) * elFactor * sph[...,2]
-    z = np.sin( sph[...,1] ) * sph[...,2]
-    cart = np.stack( (x,y,z), axis=-1 )
+    """
+    elFactor = np.cos(sph[..., 1])
+    x = np.cos(sph[..., 0]) * elFactor * sph[..., 2]
+    y = np.sin(sph[..., 0]) * elFactor * sph[..., 2]
+    z = np.sin(sph[..., 1]) * sph[..., 2]
+    cart = np.stack((x, y, z), axis=-1)
     return cart
 
-def applyRotation( xyz, ypr, isInverseRotation=False, isDegrees=False):
-    '''
+
+def applyRotation(xyz, ypr, isInverseRotation=False, isDegrees=False):
+    """
     Applies a rotation as per ypr euler angles to a set of cartesian vectors
     Wrapper for scipy.spatial.transform.Rotation object
 
@@ -88,7 +91,7 @@ def applyRotation( xyz, ypr, isInverseRotation=False, isDegrees=False):
         In rads, unless inDegrees=True
     isInverseRotation : Bool, optional
         If True the inverse of the ypr is applied
-        This should be True if compensating for a listener head rotation 
+        This should be True if compensating for a listener head rotation
     isDegrees : Bool, optional
         If True assumes the ypr vector is supplied in degrees
         The default is False.
@@ -97,75 +100,86 @@ def applyRotation( xyz, ypr, isInverseRotation=False, isDegrees=False):
     -------
     xyz_rot : Array-like, shape (N, 3) or (3)
         Rotated cartesian coordinates
-    '''
-    
+    """
+
     xyz = np.asarray(xyz)
     if xyz.shape[-1] != 3:
-        raise ValueError('You must supply all three cartesian coordinates to variable xyz')
+        raise ValueError(
+            "You must supply all three cartesian coordinates to variable xyz"
+        )
     if xyz.ndim == 1:
-        xyz = xyz[np.newaxis,:]
-        
+        xyz = xyz[np.newaxis, :]
+
     ypr = np.asarray(ypr)
     if ypr.shape[-1] != 3:
-        raise ValueError('You must supply all three euler angles to variable ypr')
+        raise ValueError("You must supply all three euler angles to variable ypr")
     if ypr.ndim == 1:
-        ypr = ypr[np.newaxis,:]
-        
-    r = rot.from_euler('zxy', ypr, degrees=isDegrees)
+        ypr = ypr[np.newaxis, :]
+
+    r = rot.from_euler("zxy", ypr, degrees=isDegrees)
     xyz_rot = r.apply(xyz, inverse=isInverseRotation)
     return xyz_rot
 
-def estimateAndApplyRotation( xyz, hhat ):
-    '''
+
+def estimateAndApplyRotation(xyz, hhat):
+    """
     Estimates the rotation vector to rotate the global frame of reference
     to the listener frame of reference defined by hhat
-    
+
     Then apply rotation to the supplied vectors xyz
-    
+
     Parameters
     ----------
     xyz : Array-like, shape (N, 3) or (3)
         Cartesian coordinates to be rotated
         May be an array of N different coordinates or a single set
     hhat : Array-like, shape (3)
-        Cartesian coordinates in the world frame of reference defining 
-        the look direction of the listener (which is in the x axis in the 
+        Cartesian coordinates in the world frame of reference defining
+        the look direction of the listener (which is in the x axis in the
         listener frame of reference)
 
     Returns
     -------
     xyz_rot : Array-like, shape (N, 3) or (3)
         Rotated cartesian coordinates, now in the listener frame of reference
-    '''
-    
+    """
+
     xyz = np.asarray(xyz)
     if xyz.shape[-1] != 3:
-        raise ValueError('You must supply all three cartesian coordinates to variable xyz')
+        raise ValueError(
+            "You must supply all three cartesian coordinates to variable xyz"
+        )
     if xyz.ndim == 1:
-        xyz = xyz[np.newaxis,:]
-        
+        xyz = xyz[np.newaxis, :]
+
     hhat = np.asarray(hhat)
     if hhat.shape[-1] != 3:
-        raise ValueError('You must supply all three cartesian coordinates to variable hhat')
+        raise ValueError(
+            "You must supply all three cartesian coordinates to variable hhat"
+        )
     if hhat.ndim != 1:
-        raise ValueError(f'hhat must be single dimension length 3, you have supplied shape {hhat.shape}')
-     
-    r, _= rot.align_vectors(np.array([[1,0,0]]), hhat[np.newaxis,:]) # calculates rotation from global to listener frame
+        raise ValueError(
+            f"hhat must be single dimension length 3, you have supplied shape {hhat.shape}"
+        )
+
+    r, _ = rot.align_vectors(
+        np.array([[1, 0, 0]]), hhat[np.newaxis, :]
+    )  # calculates rotation from global to listener frame
     isDegrees = False
-    ypr = r.as_euler('zxy', degrees=isDegrees)
+    ypr = r.as_euler("zxy", degrees=isDegrees)
     xyz_rot = applyRotation(xyz, ypr, isInverseRotation=False, isDegrees=isDegrees)
-    
+
     return xyz_rot
 
-    
-def calcRotationMatrix( ypr ):
-    ''' Port of visr rot calculator '''
-    if ypr.shape[-1] != 3:
-        raise ValueError( "Trailing dimension of ypr argument must be 3.")
 
-    phi = ypr[...,0]
-    the = ypr[...,1]
-    psi = ypr[...,2]
+def calcRotationMatrix(ypr):
+    """Port of visr rot calculator"""
+    if ypr.shape[-1] != 3:
+        raise ValueError("Trailing dimension of ypr argument must be 3.")
+
+    phi = ypr[..., 0]
+    the = ypr[..., 1]
+    psi = ypr[..., 2]
 
     a11 = np.cos(the) * np.cos(phi)
     a12 = np.cos(the) * np.sin(phi)
@@ -182,14 +196,15 @@ def calcRotationMatrix( ypr ):
     rotation = np.array([[a11, a12, a13], [a21, a22, a23], [a31, a32, a33]])
     return rotation
 
-def calcRotationMatrixYawOnly( y ):
-    ''' Port of visr rot calculator for rotation matrix yaw only '''
-#    if y.shape[-1] != 1:
-#        raise ValueError( "Trailing dimension of y argument must be 1.")
+
+def calcRotationMatrixYawOnly(y):
+    """Port of visr rot calculator for rotation matrix yaw only"""
+    #    if y.shape[-1] != 1:
+    #        raise ValueError( "Trailing dimension of y argument must be 1.")
 
     phi = y
 
-    a11 =  np.cos(phi)
+    a11 = np.cos(phi)
     a12 = -np.sin(phi)
     a13 = 0
 
