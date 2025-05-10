@@ -573,7 +573,51 @@ def SHT(data_nm, pos, N, kind="realsn3d"):
 
     return Ynm, data
 
+def readsofa(sofaPath):
+    """
+    A simple wrapper of sofar.read_sofa
+    This is not an exhaustive function, and assumes reading
+    a sofar with IR data and spherical data
 
+    Parameters
+    ----------
+    sofaPath : str
+        File path to the sofa file.
+
+    Returns
+    -------
+    hrir: Array-like, 
+    pos : Array-like, shape(Q, 3)
+        Q x spherical sampling positions of the hrir with trailing dimension ordered
+        azimuth (rads, 0 to 2pi)
+        elevation (rads, pi/2 to -pi/2)
+        radius (m, 0 to inf)
+    fs : float
+        Sampling frequency of the hrir in Hz
+
+    """
+    
+    # Read in the sofa file and extract the relevation data
+    file = sofar.read_sofa(sofaPath)
+    hrir = file.Data_IR
+    fs = file.Data_SamplingRate
+    if file.SourcePosition_Type.lower() not in ['spherical', 'sph']:
+        raise ValueError(f'Function currently supports only spherical data, this sofa file contains {file.SourcePosition_Type}')
+    
+    pos = file.SourcePosition  # spherical positions [az,el,r] in [deg,deg,m]
+    az = pos[:, 0]
+    el = pos[:, 1]
+    r = pos[:, 2]
+    dataUnits = file.SourcePosition_Units.split(', ')
+    if dataUnits[0].lower() in ['deg', 'degree']:
+        az = np.rad2deg(az)
+    if dataUnits[1].lower() in ['deg', 'degree']:
+        el = np.rad2deg(el)
+    # new sampling position array
+    pos = np.stack([az, el, r], axis=1)
+    
+    return hrir, pos, fs
+    
 def sofa2sh(sofaPath, N=None, kind="realsn3d", beta=1e-15):
     """
     Load a sofa file and perform the iSHT returning the
@@ -602,7 +646,7 @@ def sofa2sh(sofaPath, N=None, kind="realsn3d", beta=1e-15):
         Matrix of spherical harmonics up to order N sampled at the Q positions
     YnmInv : Array-like, shape((N+1)**2, Q)
         Regularised pseudoinversion of the spherical harmonics up to order N sampled at the Q positions
-    hrir_nm : Array-like, shape(N+1)**2, time/freq) or (N+1)**2, ch, time/freq))
+    hrir_nm : Array-like, shape(N+1)**2, time) or (N+1)**2, ch, time))
         The hrir spherical harmonic coefficients
     pos : Array-like, shape(Q, 3)
         Q x spherical sampling positions of the hrir with trailing dimension ordered
@@ -613,18 +657,9 @@ def sofa2sh(sofaPath, N=None, kind="realsn3d", beta=1e-15):
         Sampling frequency of the hrir in Hz
 
     """
-
+    
     # Read in the sofa file and extract the relevation data
-    file = sofar.read_sofa(sofaPath)
-    hrir = file.Data_IR
-    fs = file.Data_SamplingRate
-    pos = file.SourcePosition  # spherical positions [az,el,r] in [deg,deg,m]
-
-    az = np.deg2rad(pos[:, 0])
-    el = np.deg2rad(pos[:, 1])
-    r = pos[:, 2]
-    # new sampling position array
-    pos = np.stack([az, el, r], axis=1)
+    hrir, pos, fs = readsofa(sofaPath)
 
     if beta is None:
         beta = 0
@@ -645,20 +680,10 @@ def sofa2sh(sofaPath, N=None, kind="realsn3d", beta=1e-15):
     return Ynm, YnmInv, hrir_nm, pos, fs
 
 
-def sofa2shmagls(
-    sofaPath,
-    N=None,
-    kind="realsn3d",
-    beta=1e-15,
-    fmagls=None,
-    fade=None,
-    removeGD=False,
-    NFFT=None,
-):
+def sofa2shmagls(sofaPath, N=None, kind="realsn3d", beta=1e-15, fmagls=None, fade=None, removeGD=False, NFFT=None,):
     """
     Load a sofa file and perform the iSHT returning the
-    hrir SH coefficients
-
+    hrir SH coefficients using magls
 
     Parameters
     ----------
@@ -698,8 +723,8 @@ def sofa2shmagls(
         Matrix of spherical harmonics up to order N sampled at the Q positions
     YnmInv : Array-like, shape((N+1)**2, Q)
         Regularised pseudoinversion of the spherical harmonics up to order N sampled at the Q positions
-    hrir_nm : Array-like, shape(N+1)**2, time/freq) or (N+1)**2, ch, time/freq))
-        The hrir spherical harmonic coefficients
+    hrir_nm : Array-like, shape(N+1)**2, time) or (N+1)**2, ch, time))
+        The hrir spherical harmonic coefficients with magls processing applied
     pos : Array-like, shape(Q, 3)
         Q x spherical sampling positions of the hrir with trailing dimension ordered
         azimuth (rads, 0 to 2pi)
@@ -711,16 +736,7 @@ def sofa2shmagls(
     """
 
     # Read in the sofa file and extract the relevation data
-    file = sofar.read_sofa(sofaPath)
-    hrir = file.Data_IR
-    fs = file.Data_SamplingRate
-    pos = file.SourcePosition  # spherical positions [az,el,r] in [deg,deg,m]
-
-    az = np.deg2rad(pos[:, 0])
-    el = np.deg2rad(pos[:, 1])
-    r = pos[:, 2]
-    # new sampling position array
-    pos = np.stack([az, el, r], axis=1)
+    hrir, pos, fs = readsofa(sofaPath)
 
     if beta is None:
         beta = 0
