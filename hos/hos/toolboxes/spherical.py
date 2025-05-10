@@ -65,16 +65,19 @@ def _getSupportedSHConventions():
     supportedSHConventions = ["complex", "realn3d", "realsn3d"]
     return supportedSHConventions
 
-
-def nmACN(N):
+def nmACN(N, maxM=None):
     """
     Return set of order (n) and degree (m) indices and ACN channels up to
     a supplied truncation order N
+    Optional mixed order return as per argument of maxM
 
     Parameters
     ----------
     N : int
         Order of the sampling.
+    maxM : int
+        Sets a maximum degree above which channels are ignored and 
+        not returned, to enable mixed order regimes
 
     Returns
     -------
@@ -86,12 +89,15 @@ def nmACN(N):
         Array of the ACN channel index for each channel
 
     """
+    if maxM is None:
+        maxM = N+1
     n_list = []
     m_list = []
     for n in range(N + 1):
         for m in range(-n, n + 1):
-            n_list.append(n)
-            m_list.append(m)
+            if abs(m) <= maxM:
+                n_list.append(n)
+                m_list.append(m)
     n = np.array(n_list)
     m = np.array(m_list)
     ACN = n**2 + n + m
@@ -308,17 +314,7 @@ def iSHT(data, pos, N, kind="realsn3d", beta=1e-15):
     return Ynm, YnmInv, data_nm
 
 
-def iSHTmagls(data,
-                pos,
-                N,
-                kind="realsn3d",
-                beta=1e-15,
-                fmagls=None,
-                fade=None,
-                removeGD=False,
-                fs=48000,
-                NFFT=None,
-                ):
+def iSHTmagls(data, pos, N, kind="realsn3d", beta=1e-15, fmagls=None, fade=None, removeGD=False, fs=48000, NFFT=None,):
     """
     Calculate the inverse spherical harmonic transform of a set of data
 
@@ -439,11 +435,9 @@ def iSHTmagls(data,
     if fade is not None:
         magls_stop = np.argmin(np.abs(f - fmagls - fade))
         fade_len = magls_stop - magls_start
-        if not (fade_len % 2):
-            fade_len += 1  # ensure the window is odd to get a value of 1 sampled
-        fade = np.hanning(fade_len)
-        fade_in = fade[: (fade_len // 2) + 1]
-        fade_out = fade[(fade_len // 2) + 1 :]
+        fade = np.hanning((fade_len*2)+1)
+        fade_in = fade[:fade_len+1]
+        fade_out = fade[fade_len:]
     if magls_start > f_len:
         raise ValueError(
             f"The requested magls start frequency {fmagls} Hz is larger than the nyquist frequencys {fs/2}!"
@@ -505,9 +499,9 @@ def iSHTmagls(data,
     data_nm_out = data_nm.copy()
     data_nm_out[..., magls_start:] = data_nm_magls[..., magls_start:]
     if fade is not None:
-        data_out = data_nm[..., magls_start : magls_start + fade_len] * fade_out
-        data_in = data_nm_magls[..., magls_start : magls_start + fade_len] * fade_in
-        data_nm_out[..., magls_start : magls_start + fade_len] = data_out + data_in
+        data_out = data_nm[..., magls_start : magls_start + fade_len + 1] * fade_out
+        data_in = data_nm_magls[..., magls_start : magls_start + fade_len + 1] * fade_in
+        data_nm_out[..., magls_start : magls_start + fade_len + 1] = data_out + data_in
 
     if isReal:
         data_nm_out = np.fft.irfft(data_nm_out, NFFT, axis=-1)  # return to time domain
@@ -821,19 +815,23 @@ def rotateCoefficients(data_nm, angles, seq="zyx", kind="realsn3d", isDegrees=Fa
     return data_nm_rot
 
 
-def decimateCoefficients(data_nm):
+def decimateCoefficients(data_nm, retainACN=None):
     """
-    Reduce a full set of (N+1)**2 coefficients down to the HOS representation
-    of just the (N+1) set of m=0 coefficients
+    Reduce a full set of (N+1)**2 coefficients into a smaller subset of coefficents
+    retainACN determines which chs are kept. If left as None, decimation is performed 
+    as per the HOS representation leaving just the (N+1) set of m=0 coefficients
 
     Parameters
     ----------
     data_nm : Array-like, shape(N+1)**2, time/freq) or (N+1)**2, ch, time/freq))
         The spherical harmonic coefficients
+    retainACN: Array-like
+         Array of chs using ACN indices which are to be kept
+         All other chs will be decimated
 
     Returns
     -------
-    data_n : Array-like, shape(N+1), time/freq) or (N+1), ch, time/freq))
+    data_nm_dec : Array-like, shape(len(retainACN), time/freq) or (len(retainACN), ch, time/freq)
         The decimated spherical harmonic coefficients.
 
     """
@@ -846,14 +844,22 @@ def decimateCoefficients(data_nm):
         raise ValueError(
             "Data should have at minimum 2 dimensions, coefficients x (time/freq)"
         )
-
+        
     N = int(np.sqrt(data_nm.shape[0]) - 1)
+    
+    if retainACN is None:
+      # Retain only m=0 coefficients by default
+      retainACN = [n**2 + n for n in range(N + 1)]
 
-    D = np.zeros(((N + 1), (N + 1) ** 2))
-    for n in range(N + 1):
-        acn = n**2 + n  # acn formula for m=0 coefficients
-        D[n, acn] = 1
+    # Build the decimation matrix
+    retainACN = np.asarray(retainACN)
+    D = np.zeros((len(retainACN), (N+1)**2))
+    for i, acn in enumerate(retainACN):
+        if acn >= (N+1)**2:
+            raise ValueError(f"ACN index {acn} is out of bounds for N={N}")
+        D[i, acn] = 1
 
+    # Apply the decimation
     if dims == 2:
         data_nm_dec = D @ data_nm
     elif dims == 3:
