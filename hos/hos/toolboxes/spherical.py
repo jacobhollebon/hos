@@ -610,9 +610,9 @@ def readsofa(sofaPath):
     r = pos[:, 2]
     dataUnits = file.SourcePosition_Units.split(', ')
     if dataUnits[0].lower() in ['deg', 'degree']:
-        az = np.rad2deg(az)
+        az = np.deg2rad(az)
     if dataUnits[1].lower() in ['deg', 'degree']:
-        el = np.rad2deg(el)
+        el = np.deg2rad(el)
     # new sampling position array
     pos = np.stack([az, el, r], axis=1)
     
