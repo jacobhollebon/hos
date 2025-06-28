@@ -884,3 +884,37 @@ def decimateCoefficients(data_nm, retainACN=None):
             data_nm_dec[:, ch, :] = D @ data_nm[:, ch, :]
 
     return data_nm_dec
+
+
+def orthogonalityMatrix(Ynm, rowDependentNorm=False):
+    """
+    Calculate the orthogonality of a given spherical harmonic sampling as per 
+    B. Rafaely, Fundamentals of Spherical Array Processing. Cham: Springer, 2018.
+
+    Parameters
+    ----------
+    Ynm : Array-like, shape(Q, (N+1)**2)
+        Matrix of spherical harmonics up to order N sampled at the Q positions
+    rowDependentNorm: Bool
+        By default (False), the orthogonality result is normalised to be between 0-1
+        using the max value across the entire array.
+        If True, the normalisation is applied per row instead
+
+    Returns
+    -------
+    orthog : Array-like, shape((N+1)**2, (N+1)**2)
+        The orthogonality matrix
+
+    """
+    
+    numCoeffs = Ynm.shape[1]    
+
+    orthog =  np.transpose(np.conj(Ynm)) @ Ynm
+    if rowDependentNorm:
+        norm = np.zeros((numCoeffs,numCoeffs))
+        for i in range(numCoeffs):
+            norm[i,:] = np.amax(np.abs(orthog[i,:]))
+    else:
+        norm = np.amax(np.abs(orthog))
+        
+    return orthog
