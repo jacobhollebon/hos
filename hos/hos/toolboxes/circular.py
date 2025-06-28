@@ -90,7 +90,7 @@ def circHarmReal(az, N):
     Y = np.zeros((Q, 2 * N + 1), dtype=float)
 
     # Order: [0, -1, 1, -2, 2, ..., -N, N]
-    channels = [0] + [i * (-1) ** (i + 1) for i in range(1, N + 1) for _ in (0, 1)]
+    channels = [0] + [x for i in range(1, N + 1) for x in (-i, i)]
 
     norm = 1 / np.sqrt(2 * np.pi)
     for i, n in enumerate(channels):
@@ -109,7 +109,7 @@ def circHarmExp(az, N):
     Y = np.zeros((Q, 2 * N + 1), dtype=complex)
 
     # Order: [0, -1, 1, -2, 2, ..., -N, N]
-    channels = [0] + [i * (-1) ** (i + 1) for i in range(1, N + 1) for _ in (0, 1)]
+    channels = [0] + [x for i in range(1, N + 1) for x in (-i, i)]
 
     for i, n in enumerate(channels):
         Y[:, i] = np.exp(-1j * n * az)
