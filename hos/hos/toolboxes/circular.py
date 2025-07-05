@@ -86,7 +86,7 @@ def circHarm(az, N, kind="real", plot=False):
     if kind not in supportedCHConventions:
         raise ValueError(f"Invalid kind: Choose from {supportedCHConventions}")
 
-    az = np.asarray(az)
+    az = np.atleast_1d(np.asarray(az))
     if az.ndim != 1:
         raise ValueError(f"Expected 1D input for `az`, got shape {az.shape}")
 
