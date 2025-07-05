@@ -42,6 +42,24 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+def _getSupportedCHConventions():
+    """
+    Helper function to return the supported types of
+    circular harmonics within this toolbox
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    supportedCHConventions : str
+        List of the supported types of circular harmonics
+
+    """
+    supportedCHConventions = ["real", "exp"]
+    return supportedCHConventions
+
 def circHarm(az, N, kind="real", plot=False):
     """
     Calculate a matrix of circular harmonics up to order N
@@ -64,8 +82,9 @@ def circHarm(az, N, kind="real", plot=False):
         Circular harmonic matrix
     """
     kind = kind.lower()
-    if kind not in ["real", "exp"]:
-        raise ValueError("Invalid kind: Choose 'real' or 'exp'")
+    supportedCHConventions = _getSupportedCHConventions()
+    if kind not in supportedCHConventions:
+        raise ValueError(f"Invalid kind: Choose from {supportedCHConventions}")
 
     az = np.asarray(az)
     if az.ndim != 1:
@@ -145,8 +164,9 @@ def iCHT(data, az, N, kind="real", beta=1e-15):
         Harmonic coefficients.
     """
     kind = kind.lower()
-    if kind not in ["real", "exp"]:
-        raise ValueError("Invalid kind: Choose 'real' or 'exp'")
+    supportedCHConventions = _getSupportedCHConventions()
+    if kind not in supportedCHConventions:
+        raise ValueError(f"Invalid kind: Choose from {supportedCHConventions}")
 
     data = np.asarray(data)
     az = np.asarray(az)
@@ -198,8 +218,9 @@ def CHT(data_nm, az, N, kind="real"):
         Synthesized spatial data.
     """
     kind = kind.lower()
-    if kind not in ["real", "exp"]:
-        raise ValueError("Invalid kind: Choose 'real' or 'exp'")
+    supportedCHConventions = _getSupportedCHConventions()
+    if kind not in supportedCHConventions:
+        raise ValueError(f"Invalid kind: Choose from {supportedCHConventions}")
 
     data_nm = np.asarray(data_nm)
     az = np.asarray(az)
