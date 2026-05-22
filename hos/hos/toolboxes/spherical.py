@@ -484,13 +484,13 @@ def iSHTmagls(data, pos, N, kind="realsn3d", beta=1e-15, fmagls=None, fade=None,
     data_nm_magls = data_nm.copy()
     for findx in range(magls_start, f_len):
         if dims == 2:
-            phi = np.angle(Ynm @ data_nm[:, findx - 1])
+            phi = np.angle(Ynm @ data_nm_magls[:, findx - 1])
             data_nm_magls[:, findx] = YnmInv @ (
                 np.abs(data[:, findx]) * np.exp(1j * phi)
             )
         elif dims == 3:
             for ch in range(data.shape[1]):
-                phi = np.angle(Ynm @ data_nm[:, ch, findx - 1])
+                phi = np.angle(Ynm @ data_nm_magls[:, ch, findx - 1])
                 data_nm_magls[:, ch, findx] = YnmInv @ (
                     np.abs(data[:, ch, findx]) * np.exp(1j * phi)
                 )
