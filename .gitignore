@@ -1,3 +1,6 @@
+# Local codebase documentation — never commit
+CLAUDE.md
+
 .DS_Store
 __pycache__/
 
