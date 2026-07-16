@@ -831,6 +831,60 @@ def rotateCoefficients(data_nm, angles, seq="zyx", kind="realsn3d", isDegrees=Fa
     return data_nm_rot
 
 
+def rotateSphPoints(coords, rot, seq="zyx", isDegrees=False):
+    """
+    Rotate a set of spherical coordinates
+
+    Converts to Cartesian, applies the rotation, converts back.
+
+    Parameters
+    ----------
+    coords : Array-like, shape(Q, 2) or (Q, 3)
+        Q x spherical positions with columns ordered:
+        azimuth (rads, 0 to 2pi)
+        elevation (rads, pi/2 to -pi/2)
+        radius (m, optional, assumed unit sphere if omitted)
+    rot : Array-like, shape(3,)
+        Euler angles as per the specified seq.
+        Supplied in radians (isDegrees=False) or degrees (isDegrees=True).
+    seq : str
+        Euler angle sequence. 3 characters from {'X','Y','Z'} for intrinsic
+        or {'x','y','z'} for extrinsic rotations. Matches rotateCoefficients convention.
+    isDegrees : bool, optional
+        If True, rot is interpreted as degrees.
+
+    Returns
+    -------
+    coords_rot : Array-like, shape(Q, 2) or (Q, 3)
+        Rotated spherical positions, same shape as input.
+    """
+    from scipy.spatial.transform import Rotation
+
+    az = coords[:, 0]
+    el = coords[:, 1]
+    r = coords[:, 2] if coords.shape[1] == 3 else np.ones(coords.shape[0])
+
+    x = r * np.cos(el) * np.cos(az)
+    y = r * np.cos(el) * np.sin(az)
+    z = r * np.sin(el)
+
+    xyz_rot = Rotation.from_euler(seq, rot, degrees=isDegrees).apply(
+        np.stack([x, y, z], axis=-1)
+    )
+
+    r_rot = np.linalg.norm(xyz_rot, axis=-1)
+    az_rot = np.arctan2(xyz_rot[:, 1], xyz_rot[:, 0]) % (2 * np.pi)
+    el_rot = np.arcsin(np.clip(xyz_rot[:, 2] / r_rot, -1.0, 1.0))
+
+    coords_rot = np.zeros(coords.shape)
+    coords_rot[:, 0] = az_rot
+    coords_rot[:, 1] = el_rot
+    if coords.shape[1] == 3:
+        coords_rot[:, 2] = r_rot
+
+    return coords_rot
+
+
 def decimateCoefficients(data_nm, retainACN=None):
     """
     Reduce a full set of (N+1)**2 coefficients into a smaller subset of coefficents
