@@ -196,7 +196,7 @@ def sphHarm(pos, N, kind="realSN3D", plot=False):
     # even though the documentation says elevation (+90 to -90), the underlying sph2cart function requires colatitude (0-180)
     az = pos[:, 0]
     el = pos[:, 1]
-    co = (el - np.pi / 2) % np.pi
+    co = np.pi / 2 - el
     r = pos[:, 2]
     coords = spharpy.samplings.Coordinates()
     coords = coords.from_spherical(r, co, az)

@@ -107,7 +107,7 @@ def hoa2hosBinauralDecoder(
 ):
     """
     Decode a set of hoa format signals (coefficients of a spherical harmonic
-    expansion) to binaural using OS rendering
+    expansion) to binaural using HOS rendering
     Decoding consists of
     1) Rotating frame of reference such that yhat is rotated to zhat
     2) Decimating (removing) all channels with m not equal to 0
