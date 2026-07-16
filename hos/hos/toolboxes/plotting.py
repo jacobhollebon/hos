@@ -40,10 +40,6 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-import scienceplots
-plt.style.use(['science','ieee'])
-plt.rcParams['text.usetex'] = False # As scienceplots ieee requires a latex install
-import matplotlib as mpl; mpl.rcParams['figure.dpi'] = 200;  mpl.rcParams['savefig.dpi'] = 300
 
    
 def pointsOnSphere(pos, includeRadius=False, includeSphere=True):
