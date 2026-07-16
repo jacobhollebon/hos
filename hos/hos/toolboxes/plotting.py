@@ -41,7 +41,24 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-   
+
+def setStyle():
+    """Apply the standard HOS figure style (science + ieee via scienceplots).
+
+    Call once at the top of a figure script. Falls back silently if
+    scienceplots is not installed.
+    """
+    try:
+        import scienceplots  # noqa: F401
+        plt.style.use(['science', 'ieee'])
+    except ImportError:
+        pass
+    import matplotlib as mpl
+    plt.rcParams['text.usetex'] = False
+    mpl.rcParams['figure.dpi'] = 200
+    mpl.rcParams['savefig.dpi'] = 300
+
+
 def pointsOnSphere(pos, includeRadius=False, includeSphere=True):
     """
     Plot a set of spherical points in 3D
